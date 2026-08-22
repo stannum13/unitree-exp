@@ -1,121 +1,84 @@
-# Autonomous Overnight Codex Prompt  
-## Unitree R1 Reflect-Lite Experimental Program
+# 0. Authority, precedence, and evidence definitions
 
-You are Codex operating autonomously in a local development workspace.
+You are Codex operating autonomously in a local development workspace. Run the smallest coherent program that can produce measured evidence about a Flexion Reflect-style hierarchy on the Unitree R1. Executed experiments, not scaffolding, are the primary output.
 
-Your objective is to produce the **smallest working experimental substrate** for studying a Flexion Reflect-style hierarchical autonomy architecture on a Unitree R1.
+The scientific question is:
 
-Do not spend this run building a general robotics framework. Reuse the current official Unitree R1 MuJoCo/RL stack, add a thin experimental layer, execute the highest-information experiments that fit the available compute, and leave a precise report and continuation path.
+> How much capability comes from receding-horizon action refresh, local retriggering, semantic memory, semantic replanning, and specialist skills—and does a learned world model improve candidate selection beyond those world-model-free mechanisms?
+
+When instructions conflict, apply this order exactly:
+
+```text
+explicit user instruction
+> physical safety
+> USD 30 absolute incremental cloud-spend ceiling
+> preservation of existing resources and changes
+> measured evidence and accurate status
+> experimental gate order and stopping rules
+> experiment ambition
+> documentation and polish
+```
+
+A later section may refine an earlier instruction but may not weaken a higher-precedence constraint. Measured immutable artifacts override narrative claims.
+
+Scientific success requires nonzero simulator rollouts and, for every claim, the exact producer command, real exit code, engine and asset revision, resolved config and config hash, seed, predeclared metrics, source/container/checkpoint hashes, timestamps, and cost provenance. Missing provenance makes the claim non-passing.
+
+A file, import, unit test, synthetic fixture, schema, runner, converted asset, generated report, or unevaluated checkpoint cannot pass a gate. Imports, tests, synthetic output, and static checks are mechanical evidence only. Never convert implementation readiness into scientific success.
+
+Do not create a broad scaffold in anticipation of a later gate. Create a file or abstraction only when the next open gate consumes it or when it preserves evidence already measured.
+
+# 1. Operating mode and bounded autonomy
+
+Work autonomously until the campaign reaches a truthful completion condition. Do not ask routine implementation questions. Inspect sources, make the narrowest conservative assumption consistent with the evidence, record it, and continue.
+
+Stop a particular action when credentials or authorization are absent, a dependency is unavailable, it would mutate out-of-scope resources, it could exceed a safety or cost bound, or it could communicate with physical hardware. A blocked gate blocks its dependants, not independent zero-cost analysis or artifact preservation.
+
+Use bounded commands, explicit timeouts, bounded queues, bounded retry counters, and fail-closed guards. Never leave an interactive process or recovery loop waiting indefinitely. After a primary attempt, permit only the repair attempt explicitly allowed by that gate, and only when the repair is materially different. Preserve both attempts' evidence.
+
+Execute gates in order. Do not substitute code breadth for a failed or unrun experiment. E1 through E6 remain required ambitions, but an honest blocking or budget status is preferable to an unexecuted runner presented as progress.
 
 The architecture under investigation is:
 
 ```text
 mission instruction
-        ↓
-semantic mission agent
-        ↓
-persistent object-centric memory
-        ↓
-skill selection and verification
-        ↓
-general reactive action policy OR specialist RL skill
-        ↓
-action-chunk executor and local recovery
-        ↓
-existing R1 policy/controller substrate
-        ↓
-simulated Unitree R1
+  -> semantic mission agent
+  -> persistent object-centric memory
+  -> skill selection and verification
+  -> general reactive action policy or specialist RL skill
+  -> action-chunk executor and local recovery
+  -> selected R1 simulator/controller substrate
 ```
 
-An optional learned world model may later act as:
+A learned world model may act only as a shadow observer, progress/failure predictor, critic, or offline candidate selector in this program. It never receives physical or online control authority.
 
-```text
-shadow observer
-→ progress/failure predictor
-→ action-chunk critic
-→ candidate selector
-→ latent subgoal generator
-→ only eventually a direct planner
-```
+# 2. Pinned source repositories and environment inventory
 
-The world-model branch must be evaluated against a strong world-model-free baseline. Do not assume the world model is useful.
+Use these source pins and record the checked-out SHA independently of any newer upstream head:
 
----
+- R1 embodiment and official MuJoCo behavior: `https://github.com/unitreerobotics/unitree_rl_mjlab` at commit `1425b15f73bd4095f0df53709d7c389c3eb9e790`. The authoritative source is the R1 MJCF subtree plus loader behavior; raw `r1.xml` alone is incomplete.
+- Deployment/mapping inspection only: `https://github.com/unitreerobotics/unitree_sdk2`. Record its exact inspected SHA. Audit `https://github.com/unitreerobotics/unitree_rl_mjlab/issues/52` against current source rather than trusting either recollection or the report.
+- Isaac Lab: tag `v3.0.0-beta2.patch1`, commit `ffff603eafc6b74264a5261cc0183d6a65390d78`, using that release's documented `base` Docker workflow.
+- Isaac Sim: version 6.0.1 in the official NGC container. After pull, pin and record its base `RepoDigest` and resulting image ID.
 
-# 1. Operating mode
+Do not treat Unitree G1 or H1 Isaac repositories as evidence of R1 support. Record newer remote heads separately; never silently replace a campaign pin.
 
-Work autonomously until the run is complete.
+The local control machine is Apple M2 Max macOS. Inventory `uname -a`, `uname -m`, Python, Git, `gcloud`, active account/project, SSH/IAP support, free disk, repository status, branch, remotes, and changed files. Local responsibilities are editing, Git, `gcloud`, SSH/IAP orchestration, compact tests, analysis, checksum verification, artifact retrieval, replay, reporting, and the native macOS WebRTC client. Do not install CUDA, NVIDIA drivers, Isaac Sim, Isaac Lab, or a Linux NVIDIA container stack locally.
 
-Do not ask the user routine implementation questions. Inspect the repository, make conservative assumptions, document those assumptions, and continue.
+The only paid worker specification is:
 
-Only stop a particular phase when:
+- project `project-1178f0de-10fb-4e7e-8e4`;
+- one `g2-standard-8` in a capacity- and quota-verified `us-central1` zone;
+- Ubuntu 24.04 LTS x86-64;
+- one NVIDIA L4 with 24 GiB VRAM, 8 vCPU, and 32 GiB RAM;
+- one 150 GiB auto-delete `pd-balanced` boot disk;
+- NVIDIA production driver design target `595.58.03`, replaced only when G0 records that the current official Isaac compatibility matrix requires another version;
+- Docker Engine, Docker Compose, the current production NVIDIA Container Toolkit, and Python 3.12 in the pinned Isaac environment.
 
-- credentials are missing;
-- a required external machine is unavailable;
-- continuing would risk destructive changes;
-- continuing would communicate with a physical robot;
-- the requested operation requires explicit user authorization.
+Record discovered OS image identity, GPU, VRAM, CPU, RAM, disk, driver, Docker Engine, Docker Compose, NVIDIA Container Toolkit, CUDA interface, Python, MuJoCo, Isaac Sim, Isaac Lab, RSL-RL, and all other used package versions. For the resulting Isaac image record the base `RepoDigest`, image ID, driver, toolkit, and complete `pip freeze`.
 
-A blocked phase must not stop independent phases. Record the blocker and continue.
+Inventory the pinned Unitree source for R1 assets, `get_spec()`, loader-side mutations, actuator groups, default pose, collision configuration, joint/action ordering, registered tasks, PPO configuration, observation construction, action application, reset/step/play commands, checkpoint loading, ONNX export, simulator bridge, and any R1 deployment mapping. Cite actual paths and symbols; remembered commands and paths are not evidence.
 
-Use bounded commands and explicit timeouts. Do not leave a process waiting indefinitely. Do not repeatedly retry the same failed installation or build strategy.
-
-Prefer a functional, measured, narrow experiment over a broad scaffold.
-
----
-
-# 2. Source-of-truth repositories
-
-Use the current default branch of:
-
-```text
-https://github.com/unitreerobotics/unitree_rl_mjlab
-```
-
-Use the current official SDK only for source inspection and static deployment auditing:
-
-```text
-https://github.com/unitreerobotics/unitree_sdk2
-```
-
-Audit this upstream safety issue before touching the R1 deployment path:
-
-```text
-https://github.com/unitreerobotics/unitree_rl_mjlab/issues/52
-```
-
-Do not rely on remembered file paths or commands. Inspect the current repository and adapt to its present structure.
-
-Record:
-
-- upstream repository;
-- upstream commit SHA;
-- current branch;
-- repository status;
-- Python version;
-- operating system and architecture;
-- installed MuJoCo/mjlab/RSL-RL versions;
-- available R1 tasks;
-- exact current training command;
-- exact current play command;
-- exact current ONNX export behavior;
-- exact current simulation-deployment path;
-- existence and maturity of any R1 deployment code.
-
-Write this to:
-
-```text
-artifacts/reflect_r1/baseline_inventory.json
-docs/reflect_r1/BASELINE_INVENTORY.md
-```
-
-Do not claim that a component works merely because a file exists.
-
----
-
-# 3. Hard safety constraints
-
-## 3.1 Physical robot control is forbidden during this run
+# 3. Physical safety, mapping safety, and cloud cost ceiling
 
 Set and preserve:
 
@@ -123,552 +86,238 @@ Set and preserve:
 PHYSICAL_DEPLOYMENT_ALLOWED=false
 ```
 
-There is no override during this run.
+There is no override within this campaign. Never connect to a physical R1, publish DDS motor commands, send commands through SDK2, enable real-robot or low-level mode, ask anyone to power or suspend hardware, or run a controller against a non-loopback interface. Deployment code may be compiled, statically inspected, tested on recorded data, run in explicit dry-run mode, or exercised against a simulator through `lo`, `127.0.0.1`, or `localhost` only. Add a fail-closed interface guard before any loopback deployment-path test.
 
-Do not:
+Treat the reported R1 motor-slot mismatch as unresolved until source-derived. The reported model has 24 simulated actuators while the low-level message has 27 slots, with slots 14, 20, and 21 possibly unused. Derive the mapping from pinned source. For every simulated actuator record canonical joint name, MuJoCo joint/actuator names and indices, SDK joint and motor slot, command/state signs, position offset, limits, effort limit, gains, and source path plus symbol/line.
 
-- connect to a physical R1;
-- publish DDS motor commands;
-- execute an R1 controller against a non-loopback interface;
-- send commands through Unitree SDK2;
-- enable a real-robot debug or low-level mode;
-- ask the user to suspend or power on the robot;
-- infer that a connected Ethernet interface is safe to use.
+The mapping audit must prove exact joint coverage; no duplicate simulator index or SDK slot; explicit skipped-slot handling; no unaccounted actuator; inverse-compatible state/command transforms; signs; neutral pose; limits; effort; gains; zero, bounded-random, and one-hot round trips; and that no arm command can reach the other arm, waist, head, or leg. If upstream fixes the issue, record the fixing logic or commit and retain the checks. A mapping failure blocks every deployment-path test but does not authorize physical debugging.
 
-Any deployment executable may only be:
+USD 30 is the absolute ceiling for incremental, campaign-attributable GCP list-price spend before tax and currency conversion. It is a ceiling, not a target. Exclude unrelated pre-existing usage from the ledger and never modify that usage. Query exact live applicable rates before any paid mutation and use the greater of the live applicable rate and the design-time on-demand rate.
 
-- compiled;
-- statically inspected;
-- tested against recorded data;
-- run in explicit dry-run mode;
-- run against a simulator through loopback.
-
-Add a guard so that experimental deployment scripts reject every network interface except:
+Use this unrounded design-time envelope:
 
 ```text
-lo
-127.0.0.1
-localhost
+g2-standard-8                  0.853624312 USD/hour
+150 GiB pd-balanced            0.020548500 USD/hour
+ephemeral external IPv4        0.005000000 USD/hour
+combined runtime               0.879172812 USD/hour
+maximum charged runtime       24.000 hours
+maximum runtime cost          21.100147488 USD
+bounded non-runtime reserve    5.000000000 USD
+unallocated contingency       3.899852512 USD
 ```
 
-The guard must fail closed.
+Configure `--max-run-duration=23h58m` with `--instance-termination-action=DELETE`. Reserve the remaining two minutes for deletion slippage. Verify the termination timestamp after creation and verify the boot disk auto-delete setting before work begins.
 
-## 3.2 Audit the reported R1 motor-index mismatch
+On-demand is the default. Spot is allowed only after explicitly accepting early termination; its discount never increases authorized runtime. A non-billable capacity failure may select another verified `us-central1` zone. Once any worker first reaches a billable state, it is the campaign's only worker. Do not create a replacement after Spot preemption, bootstrap failure, user-code failure, deletion, or any other billable start.
 
-Upstream issue #52 alleges that:
+Before create, require zero campaign-labeled instances in `RUNNING`, `PROVISIONING`, `STAGING`, or `STOPPING`. Do not launch if the cumulative worst-case incremental cost can exceed USD 30. Never create Local SSD, snapshots, reusable images, reserved external addresses, load balancers, Cloud NAT, additional disks, or a second worker.
 
-- the R1 MuJoCo model exposes 24 actuators;
-- the physical low-level motor message exposes 27 slots;
-- slots 14, 20 and 21 may be unused;
-- a continuous `0..23` mapping may therefore shift upper-body state and command indices.
-
-Treat this as an unresolved safety concern until verified against the current checkout.
-
-Do not blindly assume either the issue or current source is correct. Derive the mapping from source.
-
-Create:
+When prices or specification differ, calculate:
 
 ```text
-docs/reflect_r1/R1_JOINT_MAPPING_AUDIT.md
-artifacts/reflect_r1/r1_joint_mapping_manifest.yaml
-scripts/reflect_r1/audit_r1_joint_mapping.py
-tests/reflect_r1/test_r1_joint_mapping.py
+authorized_runtime_hours = floor_to_0.1h(
+    (remaining_authorized_cost
+     - fixed_incremental_cost
+     - bounded_non_runtime_reserve
+     - deletion_slippage_allowance)
+    / conservative_all_in_hourly_rate
+)
 ```
 
-The manifest should contain one row per simulated actuator:
+`conservative_all_in_hourly_rate` is the greater of the live applicable rate and the design-time on-demand rate. `fixed_incremental_cost` is the realized allocation within, not in addition to, the USD 5 non-runtime reserve. Reduce runtime when the bound rises. Never convert contingency or a Spot discount into more runtime.
 
-```yaml
-- canonical_joint_name:
-  mujoco_joint_name:
-  mujoco_actuator_name:
-  mujoco_joint_index:
-  mujoco_actuator_index:
-  sdk_joint_name:
-  sdk_motor_slot:
-  command_sign:
-  state_sign:
-  position_offset:
-  lower_limit:
-  upper_limit:
-  effort_limit:
-  kp:
-  kd:
-  source_files:
-    - path:
-      line_or_symbol:
-```
+Before every paid launch, append a pre-launch ledger record containing resource name, labels, rate source and retrieval time, conservative hourly rate, fixed cost, maximum duration, worst-case incremental cost, cumulative worst-case cost, remaining authorized cost, and deletion allowance. Billing alerts are supplemental and are not spend caps.
 
-Verify:
+Bound the non-runtime reserve:
 
-- exact joint-name coverage;
-- no duplicate simulator indices;
-- no duplicate SDK motor slots;
-- no unaccounted simulator actuator;
-- explicit treatment of every skipped SDK slot;
-- state and command mappings are inverse-compatible;
-- sign conventions;
-- neutral/default pose;
-- position limits;
-- effort limits;
-- gains;
-- random bounded vector round trips;
-- zero-vector round trip;
-- one-hot command mapping for every joint;
-- no arm command can arrive at another arm, waist, head or leg joint.
+- WebRTC egress: at most 10 GiB and USD 1.20, using Premium-tier India egress for the bound.
+- Artifact retrieval: at most 10 GiB and USD 1.20.
+- Seven-day storage and operations: USD 0.10.
+- Logging, API usage, and rounding: USD 1.00.
+- Residual contingency: USD 1.50.
 
-If current upstream already fixes the issue, document the fixing commit or source logic and retain the tests.
+Disable verbose logging export. Count streaming bytes on the host and stop WebRTC when its 10 GiB quota is reached.
 
-If it does not, create a minimal local fix behind a clearly named mapping layer. Do not activate physical control.
+# 4. M2 Max to GCP compute, network, and artifact topology
 
----
+The M2 Max performs editing, Git, `gcloud`, SSH/IAP, analysis, checksum verification, artifact retrieval, and native macOS WebRTC viewing only. Isaac Sim and GPU R1 simulation run on the single worker. Native CPU MuJoCo may run locally only when it installs without restructuring the workspace; otherwise keep simulation on the worker.
 
-# 4. Compute topology
+Before VM creation, create a dedicated temporary custom-mode VPC and subnet. Never attach the worker to the default network. Use a dedicated service account whose object permissions are scoped only to the campaign artifact prefix; never grant project Editor, project-wide Storage Admin, or unrelated permissions.
 
-The primary development machine is an Apple M2 Max MacBook.
+Give the worker an ephemeral external IPv4 for outbound package, container, and asset downloads and optional native WebRTC. IAP supplies the SSH control path; it does not supply internet egress. Use OS Login and SSH only through IAP. Restrict TCP 22 ingress to `35.235.240.0/20`, target it only to the worker, audit effective firewall rules and service-account targeting, and treat any broad inherited ingress as gate failure.
 
-Detect the actual platform before running anything:
+Headless gates expose no application ports. During the short visual gate only, allow TCP 49100 and UDP 47998 from the M2 Max client's verified current `/32`, use host networking as required by the official native livestream path, meter bytes, and delete both rules immediately afterward. Never expose TCP 8210, noVNC, RDP, Jupyter, Docker, or any streaming service to `0.0.0.0/0`.
 
-```bash
-uname -a
-uname -m
-python --version
-git status
-```
+Use a dedicated regional object prefix for durable state. Upload manifests, ledgers, logs needed for diagnosis, and checkpoints every five minutes and after each checkpoint. Keep only the latest two checkpoints, cap cumulative uncompressed campaign artifacts at 10 GiB, disable object versioning and soft delete, and apply a seven-day lifecycle.
 
-## Local M2 Max responsibilities
+At `22h30m`, stop starting work, terminate training/rollouts cleanly, finalize `.partial` runs, flush and upload durable state, verify object checksums, and begin shutdown. The `23h58m` platform deletion is a cost fuse, never transfer logic. Retrieve artifacts to the M2 Max, verify local/object hashes, and only then delete temporary cloud copies. Verify the VM, boot disk, firewall rules, temporary network, service-account bindings, and other campaign resources reach their intended final state.
 
-Use the Mac for:
+Never stop, delete, relabel, resize, attach to, or otherwise modify an existing user resource. Campaign labels authorize only resources created by this program and recorded in its ledger; labels must never be applied to pre-existing resources.
 
-- editing;
-- Git operations;
-- repository inspection;
-- type checking and unit tests;
-- pure-Python runtime tests;
-- semantic-memory tests;
-- recovery-state-machine tests;
-- world-model tests that fit locally;
-- result analysis;
-- rollout replay;
-- documentation;
-- SSH orchestration.
+# 5. Repository and Git preservation policy
 
-Do not attempt to install:
+Inspect whether the workspace is the pinned Unitree checkout, a dirty related checkout, an empty workspace, or an unrelated repository. Preserve the user's repository and choose the smallest isolated location that does not overwrite existing content. In a dirty checkout, never reset or clean; use existing isolation or an explicitly safe worktree/clone while preserving all changes.
 
-- CUDA;
-- NVIDIA drivers;
-- Isaac Sim;
-- Isaac Lab;
-- a Linux-only NVIDIA container stack.
+Never run destructive broad commands including `git reset --hard`, `git clean -fd`, `git checkout -- .`, or `git restore .`. Never stage with `git add .` or `git add -A`. Stage explicit files only after inspecting their diffs.
 
-Do not spend the run forcing `mujoco_warp` or another CUDA-specific dependency to work on Apple Silicon.
+Do not overwrite mutable evidence, secrets, credentials, user changes, existing reports, or upstream source. Keep source changes logically isolated and commit independent prompt, implementation, compact manifest, and report changes atomically when Git identity is configured. Do not amend or rewrite user commits.
 
-Native CPU MuJoCo tests are acceptable when they install cleanly without restructuring the project. Otherwise use synthetic state fixtures locally and reserve full simulation for the remote worker.
+Do not push, open a pull request, create a release, or otherwise publish without explicit user authorization. No environment variable is a substitute for current explicit authorization.
 
-## Optional remote worker
+# 6. Evidence-first file and dependency policy
 
-Use a remote worker only when `R1_REMOTE_HOST` is explicitly present in the environment.
+Create only the minimum files consumed by the next open gate or required to preserve measured evidence. Follow existing Unitree, Isaac Lab, MuJoCo, MJLab, RSL-RL, and repository conventions. Paths emerge from the selected engine and executed gate; do not force a predeclared project-wide tree.
 
-Supported optional variables:
+Do not add empty modules, placeholder experiment runners, speculative interfaces, placeholder reports, microservices, Kubernetes, ROS 2, a generic simulator abstraction, databases, vector databases, message brokers, dashboards, custom PPO, a new configuration framework, photorealistic scene infrastructure, giant VLA/world-model checkpoints, or a separate middleware architecture.
+
+Prefer dataclasses or the repository's typed config, JSONL events, JSON/CSV metrics, simple in-process queues, deterministic fixtures, existing training infrastructure, and small inspectable models. Add a dependency only when the next experiment cannot run with the existing stack; record the reason, exact version, license-relevant provenance, install command, and resulting environment freeze.
+
+Synthetic fixtures and unit tests may validate mechanics before paid execution, but label them `SYNTHETIC_ONLY` or `TEST_ONLY`. Never allow them to satisfy G1–G3 or E1–E6.
+
+# 7. Gate sequence, acceptance contract, and status vocabulary
+
+Execute this decision tree:
 
 ```text
-R1_REMOTE_HOST
-R1_REMOTE_USER
-R1_REMOTE_WORKDIR
-R1_REMOTE_SSH_OPTS
-R1_REMOTE_CONDA_ENV
-R1_REMOTE_PYTHON
+G0 local inventory, safety lock, mapping audit, and zero-cost preflight
+  -> G1 generic headless Isaac Sim and Isaac Lab baseline
+       -> pass: G2 bounded R1 Isaac port and quantitative parity
+            -> pass: Isaac Sim is the primary experiment engine
+            -> fail/time/cost cap: G2F official R1 MuJoCo fallback
+       -> fail/time/cost cap: G2F official R1 MuJoCo fallback
+  -> G3 minimal R1 manipulation vertical slice on the selected engine
+  -> E1 reactive action refresh
+  -> E2 retrigger and escalation
+  -> E3 semantic memory and replanning
+  -> adaptively select feasible E4, E5, and E6 decisions
 ```
 
-Do not probe arbitrary SSH hosts from the user’s config.
+G1 and G2 share a six-paid-hour cap. G3 and E1–E3 are a strict dependency chain. G2F is a planned branch on the same worker, not permission for a second worker. E4–E6 remain ambitions subject to prerequisites, evidence value, the productive deadline, and the absolute cost bound.
 
-When a remote host is configured:
+A gate passes only with its declared nonzero real rollouts, invariants, metrics, immutable manifests, retrieved hash-verified artifact, exact command, and real exit status. Failed, blocked, code-only, test-only, and synthetic attempts remain visible; never relabel them as success.
 
-1. verify connectivity;
-2. verify Linux x86-64;
-3. run `nvidia-smi`;
-4. record GPU, driver, VRAM and disk availability;
-5. create an isolated remote work directory;
-6. sync only required source and configs;
-7. use bounded training/smoke runs;
-8. retrieve logs, checkpoints and metrics.
+Use only these statuses:
 
-Do not overwrite an existing remote checkout or environment.
+- `PASS`: a non-inferential gate met every declared acceptance condition with real execution evidence.
+- `PILOT_SUCCESS`: a confirmation contrast met the common posterior, safety, and mechanism gates.
+- `INCONCLUSIVE`: confirmation does not meet success or futility, or E1 selects its simplest Pareto-safe fallback without efficacy.
+- `FUTILE`: the declared posterior futility or engineering-collapse rule is met.
+- `SAFETY_DISQUALIFIED`: a declared safety event removes control authority.
+- `CODE_ONLY`: implementation exists but qualifying execution does not.
+- `TEST_ONLY`: only mechanical/unit-test evidence exists.
+- `SYNTHETIC_ONLY`: evidence comes only from synthetic fixtures or synthetic outputs.
+- `RUN_FAILED`: an attempted real run failed outside a more precise blocker.
+- `BLOCKED_GCP_AUTH`: required GCP authentication or authorization is absent.
+- `BLOCKED_GCP_QUOTA`: quota or billable capacity prevents the bounded worker.
+- `BLOCKED_LOCAL_PLATFORM`: the local platform prevents a required zero-cost action.
+- `BLOCKED_SIMULATOR`: the selected simulator cannot execute the required gate.
+- `BLOCKED_DATA`: required measured rollout data is unavailable.
+- `NOT_RUN_BUDGET_GATE`: the conservative bound cannot fit before the productive or cost deadline.
+- `COMBINED_EXPLORATORY`: a SCREEN-plus-CONFIRM 23-block summary with no confirmatory authority.
+- `ISAAC_GATE_FAILED_FALLBACK_SELECTED`: G1 or G2 exhausted its attempt/time/cost gate and official R1 MuJoCo became primary.
 
-When no remote worker is configured:
+Keep implementation readiness and scientific status in separate report fields. `PASS` and `PILOT_SUCCESS` are never inferred from file existence, imports, tests, converted assets, or checkpoints without evaluation.
 
-- complete all local-independent work;
-- create tested remote scripts;
-- syntax-check them;
-- document the exact command to launch later;
-- mark GPU-dependent results as `BLOCKED_REMOTE_GPU`;
-- do not treat this as failure of the entire run.
+# G0. Local inventory, safety lock, and preflight
 
-## Isaac Sim
+G0 is zero-cost and makes no paid mutation. It must:
 
-Do not install or configure Isaac Sim tonight.
+1. Verify active `gcloud` authentication, project `project-1178f0de-10fb-4e7e-8e4`, billing linkage, billing permissions needed to inspect live prices, and permission boundaries.
+2. Query exact live applicable compute, disk, external IPv4, storage, operations, logging, and Premium-tier India egress prices with source and timestamp.
+3. Verify L4 quota, `g2-standard-8` quota/capacity in candidate `us-central1` zones, CPU quota, ephemeral IPv4 availability, and `pd-balanced` disk quota without creating billable resources.
+4. Inventory all existing project resources read-only. Prove no campaign-labeled instance is `RUNNING`, `PROVISIONING`, `STAGING`, or `STOPPING`; do not alter any resource.
+5. Render and archive the complete proposed worker, boot disk, auto-delete, `23h58m` termination, network, subnet, ephemeral IP, service account, IAM scope, firewall, labels, startup, artifact prefix, and deletion specification before executing it.
+6. Audit effective ingress, including inherited hierarchical and VPC rules. Any broad ingress that reaches the proposed worker blocks create.
+7. Pin and verify all source SHAs, image tags, expected digests when known, and software targets. Pin Unitree at `1425b15f73bd4095f0df53709d7c389c3eb9e790`; record newer heads separately.
+8. Inventory the pinned Unitree `get_spec()` and loader mutations and complete the source-derived R1 motor mapping/limits/gains/action-normalization audit.
+9. Preserve `PHYSICAL_DEPLOYMENT_ALLOWED=false` and verify deployment-interface guards fail closed for non-loopback names and addresses.
+10. Create the cost ledger and dedicated regional artifact-prefix plan, including lifecycle, quotas, upload cadence, checksum scheme, and cleanup ownership.
+11. Compute worst-case spend with the greater live/design rates, fixed allocations, reserve, contingency, and deletion allowance. Refuse creation unless the result is below USD 30.
 
-Create only:
+G0 `PASS` requires recorded outputs and exit codes for every check, a complete pre-launch ledger entry, safe mapping disposition, and a fully rendered create specification. Missing auth or quota receives the precise blocker. G0 never probes physical hardware.
 
-```text
-docs/reflect_r1/ISAAC_R2S2R_LATER.md
-```
+# G1. Generic headless Isaac Sim/Isaac Lab baseline
 
-This document should describe how remote headless Isaac Sim may later be used for:
+After G0 passes and immediately after the sole worker becomes billable:
 
-- richer camera rendering;
-- synthetic visual data;
-- reconstructed deployment scenes;
-- site-specific visual evaluation;
-- cross-engine validation;
-- real-to-sim-to-real experiments.
+1. Verify the L4 identity and 24 GiB VRAM, driver, Docker Engine, Docker Compose, and NVIDIA Container Toolkit/runtime from exact command outputs.
+2. Pull Isaac Sim 6.0.1 from official NGC, record the base `RepoDigest` and resulting image ID, and record driver/toolkit versions plus `pip freeze`.
+3. Install/use Isaac Lab `v3.0.0-beta2.patch1` at `ffff603eafc6b74264a5261cc0183d6a65390d78` through its documented `base` Docker workflow.
+4. Run the official Isaac compatibility checker headlessly and require the literal result `PASSED` with real exit status.
+5. Run a stock headless Isaac Lab example.
+6. Run a multi-environment Cartpole reset/step smoke or short training run.
+7. Require clean startup, finite state throughout, stable VRAM without monotonic leak or OOM pressure, real exit status, and a compact output artifact uploaded, retrieved locally, and SHA-256 verified.
 
-MuJoCo/MJLab is the primary substrate for this run.
+G1 permits one primary attempt plus at most one materially different repair. G1 and G2 together may consume at most six paid hours, twice NVIDIA's normal sub-three-hour quick-install expectation. Stop G1 when its attempts or the shared cap are exhausted, preserve classified evidence, set `ISAAC_GATE_FAILED_FALLBACK_SELECTED`, and execute G2F on the same worker. A G1 failure does not authorize a replacement VM.
 
----
+# G2. Bounded R1 Isaac port and quantitative parity
 
-# 5. Repository strategy
+Attempt G2 only after G1 `PASS`. It receives one primary conversion attempt plus at most one materially different repair and shares G1's six-paid-hour cap. Execute exactly this sequence:
 
-First determine whether the current directory is:
+1. From pinned Unitree source, call `get_spec()`, compile with its repository-pinned MuJoCo stack, serialize the resolved `MjSpec`, and materialize every loader-injected asset into a self-contained relative bundle.
+2. In a clean process that does not import Unitree Python, recompile the materialized bundle with the same MuJoCo version and require exact reproduction of the original compiled model.
+3. Export a canonical manifest of bodies, joints, geoms, sites, tree topology, actuators, names/types/order, limits, mass, COM, inertia, home pose, gains, armature, collision enablement and dimensionality, contact masks, friction, solver settings, and action transforms.
+4. Import the self-contained MJCF with Isaac Sim's official MJCF importer and record every importer option.
+5. Explicitly transfer loader-side actuator groups, stiffness, damping, effort limits, armature, soft-limit factor, home state, collision policy, and per-joint action scale into the Isaac R1 configuration.
+6. Reopen the generated USD headlessly and mechanically compare its manifest with the canonical manifest.
+7. Run fixed-base, contact-free paired actuator probes in MuJoCo and Isaac using identical targets.
+8. Run floating-base plane reset and five-second standing probes.
+9. Run bounded one-group-at-a-time and one-joint-at-a-time commands, recording command/action ordering and direction.
+10. Scale through 1, 16, 64, and 256 environments, measuring VRAM and stopping before OOM or unsafe memory pressure.
 
-1. already a clone/fork of `unitreerobotics/unitree_rl_mjlab`;
-2. an empty workspace;
-3. an unrelated non-empty repository.
+Resolve values from pinned source rather than memory. At design time require five actuator groups, soft position factor 0.9, home base height 0.76 m, the complete source home-joint map, full collision policy, and per-joint action scaling `0.25 * effort_limit / stiffness`. Any different discovered value must cite the exact source and remain consistent through the canonical and Isaac manifests.
 
-Proceed as follows.
+Apply these acceptance tolerances:
 
-## Existing clean Unitree checkout
+- Canonical bundle versus original compiled `MjSpec`: exact names, counts, types, order, topology, actuator membership/order, and collision enablement where specified; all canonical numeric physical properties within absolute or relative `1e-12`.
+- Isaac metadata/config versus canonical manifest: exact names, counts, topology, actuator membership, action order, and collision policy; joint limits and home within `1e-6 rad`; mass within `1e-5` relative or `1e-7 kg`; COM within `1e-6 m`; inertia within `1e-5` relative or `1e-9 kg*m^2`; actuator/control values within `1e-7` relative or `1e-9` absolute.
+- Forward kinematics at home and three deterministic poses within 10 percent of every joint range: per-link translation error `<=0.5 mm` and orientation geodesic error `<=0.05 degrees`.
+- Identical two-second bounded contact-free targets: joint RMSE `<=0.02 rad`, maximum error `<=0.05 rad`, and effort overshoot `<=1%`.
+- Floating-base five-second standing: finite state, penetration `<=2 mm`, base-height drift after the first second `<=5 mm`, no monotonically growing kinetic energy, and hard-limit overshoot `<=1e-4 rad`.
+- One-joint direction probes: zero action-order or sign failures.
 
-Create a branch:
+G2 `PASS` requires every expected joint/actuator accounted for, all tolerance checks passing, finite reset/step behavior, successful scale stages until the safe pre-OOM stop, and an exact command plus immutable manifest and metrics retrieved with verified hashes. Passing establishes experimental usability, not cross-engine dynamic equivalence. A generated USD without these rollouts is `CODE_ONLY`.
 
-```text
-codex/reflect-r1-overnight
-```
+If G2 exhausts its attempts, shared cap, or cost bound, freeze artifacts; classify failure as conversion, articulation, actuation, reset, physics, scaling, or another precise category; set `ISAAC_GATE_FAILED_FALLBACK_SELECTED`; and continue immediately to G2F on the same worker.
 
-Preserve upstream code wherever possible.
+# G2F. Official R1 MuJoCo fallback
 
-## Existing dirty Unitree checkout
+G2F is the planned experimental fallback. It does not retry Isaac and never creates another worker. Preserve all G1/G2 commands, exit codes, logs, manifests, partial artifacts, and the classified Isaac failure.
 
-Do not reset, clean or overwrite the user’s changes.
+From the pinned `unitree_rl_mjlab` checkout, reproduce the official R1 task registration/config load and official reset/step/play path on the same worker before changing the manipulation task. Discover commands from pinned source, run them with bounded timeouts and deterministic seeds, and record finite state, exact exit status, engine/package versions, config, source SHA, and retrieved artifact hashes.
 
-Prefer a separate Git worktree from the current HEAD. If that is unsuitable, create a sibling clone.
+Use MuJoCo as primary only after the official reproduction is real. Do not require a MuJoCo-versus-itself cross-engine replay. If official reproduction cannot run, report `BLOCKED_SIMULATOR` or `RUN_FAILED` rather than building later experiment scaffolding.
 
-## Empty workspace
+# G3. Minimal R1 manipulation vertical slice
 
-Clone the official repository:
+On the selected engine, implement only the smallest task needed by the hierarchy:
 
-```bash
-git clone https://github.com/unitreerobotics/unitree_rl_mjlab.git
-```
+> From a stable stance or explicitly supported upper body, move one hand or wrist site toward one large object and push it toward one planar goal using privileged poses and controller-compatible position targets.
 
-## Unrelated non-empty repository
+Use one large rigid object, one support surface when needed, one planar goal, privileged object/goal poses, a known hand/wrist site, and existing actuator limits. Do not initially require RGB perception, detection, grasping, fingers, walking, bimanual control, arbitrary 6-DoF hand pose, force sensing, or language-conditioned neural inference.
 
-Do not modify unrelated files. Clone the Unitree repository into a clearly named subdirectory or sibling workspace.
+Label stability explicitly as `fixed_or_supported_upper_body` or `free_base_or_existing_standing_substrate`. Never generalize supported-upper-body evidence to whole-body success. If standing integration is not supported cleanly, use supported mode and record the limitation rather than widening the gate.
 
-## Git restrictions
+Do not build a generic simulator abstraction. The thin experiment contract may carry `engine=isaac|mujoco`, asset revision, control rate, and stability mode; engine-specific task/reset/step code stays near upstream conventions.
 
-Never run:
-
-```text
-git reset --hard
-git clean -fd
-git checkout -- .
-git restore .
-git add .
-git add -A
-```
-
-Do not push or open a pull request unless:
-
-```text
-ALLOW_PUSH=1
-```
-
-Commit logically separated phases when Git identity is already configured. Otherwise leave a clean, reviewable diff and document it.
-
----
-
-# 6. Minimize new scaffolding
-
-Use existing repository conventions and dependencies.
-
-Add no more abstraction than the experiments require.
-
-A reasonable target layout is:
-
-```text
-reflect_r1/
-├── __init__.py
-├── types.py
-├── clock.py
-├── action_chunks.py
-├── executor.py
-├── progress.py
-├── recovery.py
-├── memory.py
-├── tools.py
-├── agent.py
-├── logging.py
-├── proposals.py
-└── world_models/
-    ├── __init__.py
-    ├── dataset.py
-    ├── progress_classifier.py
-    ├── privileged_dynamics.py
-    ├── latent_dynamics.py
-    └── ranking.py
-
-experiments/reflect_r1/
-├── configs/
-├── e0_official_r1_baseline.py
-├── e1_reactive_execution.py
-├── e2_skill_retrigger.py
-├── e3_semantic_replanning.py
-├── e4_specialist_push.py
-├── e5_world_model_ranking.py
-└── e6_full_ablation.py
-
-scripts/reflect_r1/
-├── overnight.sh
-├── local_checks.sh
-├── remote_bootstrap.sh
-├── remote_official_r1_smoke.sh
-├── remote_specialist_push.sh
-├── sync_remote_artifacts.sh
-├── audit_r1_joint_mapping.py
-└── dry_run_deployment.sh
-
-tests/reflect_r1/
-docs/reflect_r1/
-artifacts/reflect_r1/
-```
-
-Adapt these paths to the existing repository rather than forcing them mechanically.
-
-Do not add:
-
-- microservices;
-- Kubernetes;
-- ROS 2;
-- a generic middleware framework;
-- a general simulator abstraction;
-- a database server;
-- a vector database;
-- a web dashboard;
-- a custom reinforcement-learning implementation;
-- a new message broker;
-- a new configuration framework when the repository already has one;
-- a photorealistic scene pipeline;
-- a large VLA checkpoint;
-- a multi-billion-parameter world model.
-
-Use:
-
-- Python dataclasses or the project’s existing typed config mechanism;
-- JSONL for events;
-- JSON/CSV for metrics;
-- existing RSL-RL and MJLab components;
-- simple in-process queues;
-- deterministic test fixtures.
-
----
-
-# 7. Overnight success definition
-
-## Required minimum
-
-The run is successful when it leaves all of the following:
-
-1. a verified baseline inventory;
-2. an R1 joint/motor mapping audit;
-3. physical output hard-disabled;
-4. a local test suite for the action executor, recovery logic and memory;
-5. one runnable minimal R1 simulation task or a clearly isolated simulator blocker;
-6. a working reactive action-chunk experiment;
-7. a working retrigger/escalation experiment;
-8. a working semantic-memory and semantic-replanning experiment;
-9. a rollout dataset format;
-10. at least a progress-classifier and privileged-dynamics world-model baseline;
-11. a candidate-ranking evaluation;
-12. a full hierarchy ablation runner or configuration matrix;
-13. sim-to-real documentation;
-14. a complete overnight report with exact commands and artifacts.
-
-## Stretch outcomes
-
-Attempt these only after the required minimum is secure:
-
-- run the official R1 environment on a remote NVIDIA worker;
-- run a bounded official R1 training smoke test;
-- play an existing or newly produced checkpoint;
-- verify ONNX export;
-- run ONNX inference parity checks;
-- create and smoke-test a specialist pushing RL environment;
-- train a small visual-latent predictor;
-- run the complete ablation matrix in simulation.
-
-Do not sacrifice the required minimum to chase a long training run.
-
----
-
-# 8. Phase A — Inspect and reproduce the official R1 baseline
-
-## A1. Repository inspection
-
-Locate:
-
-- R1 MJCF/XML assets;
-- actuator definitions;
-- default pose;
-- joint-order definitions;
-- R1 velocity task registration;
-- PPO configuration;
-- observation construction;
-- action application;
-- ONNX export;
-- simulator bridge;
-- R1 deployment controller, if present;
-- Unitree SDK2 message mapping.
-
-Create a source map in:
-
-```text
-docs/reflect_r1/R1_SOURCE_MAP.md
-```
-
-For every important behavior, identify the actual symbol and path.
-
-## A2. Local checks
-
-Run only checks that are appropriate for the local platform:
-
-- import checks;
-- config parsing;
-- task registration discovery;
-- XML parsing;
-- MJCF actuator/joint extraction;
-- mapping audit;
-- pure-Python tests;
-- native CPU MuJoCo smoke test when available.
-
-Do not install a GPU stack locally.
-
-## A3. Remote official smoke
-
-When a remote GPU worker is configured, reproduce the official R1 task before modifying the environment.
-
-Discover the exact current command. It is likely based on the registered R1 flat/velocity task, but do not hard-code a remembered command without verifying it.
-
-Run, in order:
-
-1. task listing or config load;
-2. one-environment reset/step smoke;
-3. small headless play or rollout;
-4. bounded training smoke;
-5. checkpoint save;
-6. policy load;
-7. ONNX export;
-8. ONNX inference on recorded observations.
-
-Do not launch full-scale training merely to prove the pipeline works.
-
-Record exact commands, return codes and artifact paths.
-
-## A4. ONNX parity
-
-For a saved policy:
-
-- collect deterministic observations;
-- run PyTorch inference;
-- run ONNX inference;
-- compare shape, finite values and numerical difference;
-- document normalization and action scaling;
-- test malformed observation rejection;
-- test joint-order consistency.
-
-Do not connect the ONNX output to physical commands.
-
----
-
-# 9. Phase B — Build one minimal manipulation vertical slice
-
-The first custom task should test the hierarchy, not solve general humanoid manipulation.
-
-Implement the simplest viable R1 task:
-
-> From a stable stance, move one hand or wrist contact point toward a large tabletop object and push it toward a marked planar goal.
-
-Use:
-
-- one large rigid object;
-- one table or support surface;
-- one planar target;
-- privileged object pose;
-- privileged target pose;
-- a known hand/wrist site;
-- joint-position or joint-position-delta targets;
-- existing actuator limits.
-
-Do not initially require:
-
-- RGB perception;
-- object detection;
-- grasping;
-- finger manipulation;
-- walking;
-- bimanual coordination;
-- arbitrary 6-DoF hand pose;
-- contact-force sensing;
-- language-conditioned neural inference.
-
-## Stability modes
-
-Provide two clearly labelled modes when feasible:
-
-```text
-fixed_or_supported_upper_body
-free_base_or_existing_standing_substrate
-```
-
-The supported/fixed mode exists to validate the hierarchy rapidly.
-
-Do not describe supported-base success as full humanoid whole-body success.
-
-If the existing R1 substrate cannot safely combine standing and upper-body targets without larger architectural changes, implement the supported mode, document the limitation, and leave a clean interface for the standing policy.
-
-## Proposal-policy interface
-
-Create a small interface such as:
+Expose only the proposal-policy interface consumed immediately by E1:
 
 ```python
 class ActionProposalPolicy(Protocol):
-    def propose(
-        self,
-        observation: Observation,
-        goal: SkillGoal,
-    ) -> ActionChunk:
+    def propose(self, observation: Observation, goal: SkillGoal) -> ActionChunk:
         ...
 ```
 
-Implement runnable adapters:
+Use runnable `ScriptedChunkPolicy`, `NoisyScriptedChunkPolicy`, and `RecordedChunkPolicy` adapters as needed. A remote policy adapter may exist only if an executed gate consumes it; it must be inert in tests and is never described as a VLA.
 
-```text
-ScriptedChunkPolicy
-NoisyScriptedChunkPolicy
-RecordedChunkPolicy
-RemotePolicyClient
-```
+G3 `PASS` requires nonzero real reaching and pushing rollouts, finite bounded actions, the typed runtime records below, and metrics sufficient to open E1. A task that imports, resets synthetically, or renders without reaching/pushing is `CODE_ONLY`, `TEST_ONLY`, or `SYNTHETIC_ONLY` as applicable.
 
-`RemotePolicyClient` is only an adapter for a future VLA/action policy. It should not require a server during tests.
+# Shared runtime contracts
 
-Do not claim that the scripted policy is a VLA.
+Implement these contracts only when G3/E1 consumes them. Use a controllable monotonic clock; timing logic and tests must never depend on wall-clock sleeps.
 
----
-
-# 10. Shared runtime types
-
-Implement only the types needed by the experiments.
-
-## Observation
+Minimum immutable observation:
 
 ```python
 @dataclass(frozen=True)
@@ -682,7 +331,7 @@ class Observation:
     phase: str | None
 ```
 
-## Action chunk
+Minimum immutable action chunk:
 
 ```python
 @dataclass(frozen=True)
@@ -700,9 +349,7 @@ class ActionChunk:
     metadata: Mapping[str, Any]
 ```
 
-## Execution events
-
-At minimum:
+Events include at least:
 
 ```text
 OBSERVATION_RECEIVED
@@ -723,220 +370,119 @@ SEMANTIC_REPLAN
 SAFETY_REJECTION
 ```
 
-Use a controllable monotonic clock abstraction so timing tests do not depend on wall-clock sleeps.
+Every event uses the monotonic timestamp, wall-clock UTC timestamp for provenance, `run_id`, engine, rollout/seed block, observation sequence when applicable, skill/phase, and structured reason. Action arrays must use the verified selected-engine order and transform.
 
----
+# Common experimental design and stopping rules
 
-# 11. Experiment E1 — Reactive execution without a world model
+One paired seed block is one scene seed crossed with the complete applicable perturbation suite. All competing variants receive identical object poses, goals, randomization draws, perturbation times, proposal delays, and supported base disturbances. Frames, candidates, and perturbations within a block are clustered observations and are not independent.
 
-## Question
+Before tuning, freeze three disjoint seed lists:
 
-How much real-time reactivity comes from refreshing observations and replacing stale action chunks, without learned dynamics or online physics planning?
+- `DEV`: unrestricted tuning, never used for inferential claims;
+- `SCREEN`: exactly 11 paired seed blocks;
+- `CONFIRM`: exactly 12 untouched paired seed blocks, opened only after selecting and freezing one contrast.
 
-## Implement four execution modes
+`SCREEN` is only for selection and posterior-predictive futility. It contributes no observations to final efficacy. `CONFIRM` is the sole inferential dataset. A combined 23-block summary is labelled `COMBINED_EXPLORATORY` and never confirmatory.
 
-### E1-A — Open loop
+Predeclare one primary binary endpoint per contrast. Evaluate endpoints lexicographically:
 
-```text
-observe once
-→ generate full chunk
-→ execute entire chunk
-```
+1. safety and runtime invariants;
+2. primary binary endpoint;
+3. continuous mechanism/diagnostic endpoint.
 
-### E1-B — Receding prefix
+Do not create an arbitrary weighted score.
 
-```text
-observe
-→ generate chunk
-→ execute first N actions
-→ discard remaining actions
-→ observe again
-```
-
-### E1-C — Asynchronous latest-valid chunk
+For each block, reduce incumbent/challenger success to `00`, `01`, `10`, or `11`; `01` means challenger-only success and `10` means incumbent-only success. Use only this paired Bayesian model:
 
 ```text
-executor continues current safe chunk
-while proposal worker processes newest observation
-→ replace remaining future actions when a newer valid chunk arrives
+theta ~ Dirichlet(1/2, 1/2, 1/2, 1/2)
+counts ~ Multinomial(N, theta)
+Delta = theta_01 - theta_10
 ```
 
-### E1-D — Overlap/blend replacement
+Update each cell parameter with its count. Compute `P(Delta > 0)` and `P(Delta >= MES)` by deterministic integration. Do not combine these posterior probabilities with p-values, bootstrap thresholds, or a second efficacy framework.
 
-Blend only the future, unexecuted portion of a new chunk with the current command trajectory.
+For ordinary modules, set `MES = 2/12 = 1/6`. For E4 and the full-stack E6 confirmation, set `MES = 3/12 = 1/4`.
 
-Do not rewrite actions already executed.
+For every SCREEN candidate, compute the predictive probability that a fresh 12-block confirmation panel will meet final success, using the Dirichlet-multinomial distribution. Simulated CONFIRM panels must be analyzed from the original Jeffreys prior, not the SCREEN posterior. Drop a candidate when that predictive chance is below 0.10. Among remaining candidates select exactly one challenger per predeclared incumbent by expected `Delta`, subject to all safety and mechanism diagnostics. SCREEN probabilities are operational only.
 
-## Runtime invariants
+On CONFIRM:
 
-Enforce:
+- `PILOT_SUCCESS` requires `P(Delta > 0) >= 0.95`, `P(Delta >= MES) >= 0.50`, and every safety and mechanism gate.
+- `FUTILE` requires `P(Delta >= MES) <= 0.10`.
+- Otherwise report `INCONCLUSIVE`.
 
-- expired chunks are never executed;
-- chunks based on older observations cannot replace newer chunks;
-- action dimensions match the R1 control interface;
-- values are finite;
-- joint targets are clamped to configured limits;
-- executor has a valid hold action;
-- no queue is unbounded;
-- policy failure cannot leave the executor emitting stale actions indefinitely.
+Absence of `PILOT_SUCCESS` is not equivalence. Preserve the `00/01/10/11` counts, posterior values, integration method/version, and deterministic numerical settings.
 
-## Perturbation
+Any non-finite or out-of-limit command, unbounded recovery loop, indefinite stale-action emission, failed safe hold, or method-attributable catastrophic fall ends the rollout and immediately disqualifies the variant from control authority as `SAFETY_DISQUALIFIED`. It may remain an offline/shadow observation. Zero observed events never establishes safety.
 
-At a seeded time during reaching or pushing:
-
-- move the object laterally;
-- optionally change the goal;
-- optionally delay proposal generation.
-
-Evaluate whether each mode reacts.
-
-## Metrics
-
-Record:
-
-- task success;
-- object-goal final error;
-- recovery after perturbation;
-- observation-to-action age;
-- action-chunk age;
-- proposal latency;
-- executor idle time;
-- number of expired actions;
-- number of chunk replacements;
-- target-joint discontinuity;
-- action jerk proxy;
-- safety rejections;
-- rollout duration.
-
-Run multiple deterministic seeds when simulation is available.
-
-Generate:
+Before SCREEN, budget each stage as:
 
 ```text
-artifacts/reflect_r1/e1/metrics.csv
-artifacts/reflect_r1/e1/summary.json
-artifacts/reflect_r1/e1/events/*.jsonl
-docs/reflect_r1/E1_REACTIVE_EXECUTION.md
+required_hours = cold_start
+               + asset_or_task_initialization
+               + rollout_data_generation
+               + training
+               + checkpoint_evaluation
+               + final_evaluation
+               + artifact_synchronization
+               + interruption_allowance
 ```
 
-Select a default world-model-free execution mode based on measured results, not intuition.
+Measure batched wall time at the intended parallel-environment count until the one-sided 90-percent runtime upper bound is within 10 percent of the point estimate or calibration consumes 5 percent of the provisional stage allowance. Budget with the upper bound. If the stage does not fit, reduce candidate breadth; never break paired scenes or perturbation coverage.
 
----
+# E1. Reactive action refresh
 
-# 12. Experiment E2 — Skill retriggering and escalation
+Question: how much real-time reactivity comes from refreshing observations and replacing stale chunks without learned dynamics or online physics planning?
 
-## Question
+Implement and SCREEN all four modes on the same 11 blocks:
 
-Where should failure handling transition from continued local execution to skill restart to semantic replanning?
+- A — open loop: observe once, generate a full chunk, execute the entire chunk.
+- B — receding prefix: observe, generate, execute the first `N` actions, discard the remainder, observe again.
+- C — asynchronous latest-valid chunk: the executor continues the current safe chunk while the proposal worker handles the newest observation, then replaces only future actions when a newer valid chunk arrives.
+- D — overlap/blend replacement: blend only the future unexecuted portion of the new chunk with the current command trajectory; never rewrite executed actions.
 
-## Implement only three decisions
+Predeclare the incumbent, normally A, before SCREEN. Apply a seeded lateral object displacement during reach/push and, according to the fixed perturbation suite, goal change and proposal delay. The primary binary endpoint is recovery from the seeded perturbation within the fixed predeclared deadline. Use ordinary `MES = 1/6`. Select and freeze exactly one Pareto-safe challenger and compare it with the incumbent on CONFIRM.
+
+Enforce: expired chunks never execute; older-observation chunks never replace newer chunks; dimensions match the verified R1 action interface; values are finite; targets are clamped to configured limits; a valid safe hold always exists; queues are bounded; and policy failure cannot emit stale actions indefinitely.
+
+Record task success, object-goal final error, perturbation recovery/deadline, observation-to-action age, chunk age, proposal latency, executor idle time, expired-action count, replacement count, target-joint discontinuity, action jerk proxy, safety rejections, and rollout duration. Action age, discontinuity, and jerk are directional/Pareto diagnostics, not additional inferential tests; require the prespecified direction and no limit-violating Pareto regression.
+
+If no mode meets the efficacy rule, choose the simplest Pareto-safe mode and report `INCONCLUSIVE`. Selection must be measured, never intuitive.
+
+# E2. Skill retriggering and escalation
+
+Question: when should failure handling move from local execution to restarting a skill or semantic replanning?
+
+The recovery controller exposes only `CONTINUE`, `RETRIGGER`, and `ESCALATE`. Its transparent model-free monitor uses end-effector/object distance, object/goal distance, recent progress rate, joint-limit proximity, object visibility/existence, elapsed skill time, action age, and queue health to classify `progressing`, `temporarily_stalled`, `local_goal_changed`, `precondition_invalid`, `unsafe`, or `success`.
+
+A retrigger must atomically stop accepting the old chunk, clear all unexecuted actions, command safe hold, request a fresh observation, reset overlap and proposal execution state, retain mission semantic context, restart the same skill with the updated goal, and increment a bounded retry counter. It must not reload weights or restart the process.
+
+Escalate when the target disappears, becomes unreachable for the current skill, violates a semantic precondition, exhausts retries, requires a blocker-clearing skill, or the instruction changes.
+
+Before stochastic inference, all deterministic oracle cases must pass exactly:
 
 ```text
-CONTINUE
-RETRIGGER
-ESCALATE
+small target displacement       -> CONTINUE
+large reachable displacement    -> RETRIGGER
+target removed                  -> ESCALATE
+progress stalled                -> RETRIGGER
+stale chunk                     -> RETRIGGER
+retry budget exceeded           -> ESCALATE
+unsafe action                   -> ESCALATE or bounded safe failure
 ```
 
-## Progress monitor
+Also require zero-tolerance checks for target removal, stale chunks, retry exhaustion, unsafe actions, safe hold, and infinite-loop prevention. A recurrence of a deterministic-case failure in stochastic evaluation disqualifies the configuration.
 
-Begin with a transparent model-free monitor using:
+Freeze recovery-rule candidates from DEV, SCREEN them on paired blocks, and confirm exactly one challenger against the predeclared incumbent. A stochastic block succeeds only when it makes the correct recovery decision and then recovers within the fixed deadline. Use ordinary `MES = 1/6`.
 
-- end-effector-to-object distance;
-- object-to-goal distance;
-- recent rate of progress;
-- joint-limit proximity;
-- object visibility/existence;
-- elapsed skill time;
-- action age;
-- queue health.
+Record eventual success, decision, recovery latency, retries, unnecessary retriggers/escalations, failed escalation, safe-hold result, and loop-bound result. Any loop, missed unsafe escalation, retry breach, failed hold, or deterministic-case recurrence is `SAFETY_DISQUALIFIED`.
 
-Classify:
+# E3. Semantic memory and replanning
 
-```text
-progressing
-temporarily_stalled
-local_goal_changed
-precondition_invalid
-unsafe
-success
-```
+Question: can a slow semantic agent preserve task state and replan only when local recovery is insufficient?
 
-Map these to the three recovery decisions.
-
-## Retrigger semantics
-
-A retrigger must:
-
-1. stop accepting the old chunk;
-2. clear all unexecuted actions;
-3. command safe hold in simulation;
-4. request a fresh observation;
-5. reset action-overlap state;
-6. reset proposal-policy execution state;
-7. retain mission-level semantic context;
-8. start the same skill with the updated goal;
-9. increment a bounded retry counter.
-
-Do not reload model weights or restart the whole process.
-
-## Escalation semantics
-
-Escalate when:
-
-- the target disappeared;
-- the target became unreachable under the current skill;
-- the semantic precondition is false;
-- retry budget is exceeded;
-- a blocker requires another skill;
-- the instruction changed.
-
-## Test cases
-
-Create deterministic tests and simulated scenarios for:
-
-```text
-small target displacement       → CONTINUE
-large reachable displacement    → RETRIGGER
-target removed                  → ESCALATE
-progress stalled                → RETRIGGER
-stale chunk                     → RETRIGGER
-retry budget exceeded           → ESCALATE
-unsafe action                   → ESCALATE or safe failure
-```
-
-Metrics:
-
-- eventual success;
-- recovery decision;
-- recovery latency;
-- retry count;
-- unnecessary retriggers;
-- unnecessary escalations;
-- failed-to-escalate cases;
-- infinite-loop prevention.
-
-Generate:
-
-```text
-artifacts/reflect_r1/e2/
-docs/reflect_r1/E2_RECOVERY.md
-```
-
----
-
-# 13. Experiment E3 — Semantic memory and semantic replanning
-
-## Question
-
-Can a slow semantic agent maintain persistent task state and replan only when local execution can no longer recover?
-
-Do not build SLAM or a dense semantic map tonight.
-
-## Object-centric memory
-
-Use an in-process scene graph with JSON snapshot persistence.
-
-Each object should contain:
+Use an in-process object-centric scene graph with atomic JSON snapshots. Do not build SLAM or a dense semantic map. Each object includes:
 
 ```python
 @dataclass
@@ -951,479 +497,80 @@ class ObjectBelief:
     attributes: dict[str, Any]
 ```
 
-Support only the relations needed by the task:
+Support only `NEAR`, `ON`, `BLOCKS`, `IN`, `HELD`, and `REACHABLE`. Track provenance, confidence, last-seen time, staleness, explicit unknown state, and changes caused by skills. Never use an old pose as current without applying the declared staleness rule.
+
+Expose typed structured-result tools: `look()`, `find(label)`, `get_object_state(object_id)`, `reach(object_id)`, `push(object_id, target_id_or_pose)`, `verify(predicate)`, and `safe_hold()`.
+
+The required reproducible baseline is `RuleBasedMissionAgent`. An optional language-model adapter may run only when the user has explicitly allowed external LLM access and credentials already exist; it adds no test dependency. Wake the semantic agent only on mission start, skill completion, skill escalation, material graph change, or instruction change—never in the fast action loop.
+
+Use the mission: push the target into the marked region; if another object blocks access, clear it first. The nominal flow is observe, identify target/blocker relation, push blocker, verify clearance, reacquire target, push target, and verify target in goal.
+
+The perturbation suite includes an unseen target move, stale object, blocker removal, similar labels, pose change after failed push, mid-mission instruction change, and target disappearance.
+
+SCREEN M1 and M2 against M0 on the same blocks:
+
+- M0: no persistent memory.
+- M1: persistent object table.
+- M2: persistent table with confidence and staleness.
+
+Freeze one persistent-memory challenger and confirm it against M0. A block succeeds only when the correct-object mission completes without a stale-memory action. Use ordinary `MES = 1/6`.
+
+Record mission success, wrong-object actions, stale-memory actions, unnecessary observations, semantic replans, tool calls, movement recovery, and agent latency. Any wrong-object safety consequence is `SAFETY_DISQUALIFIED`; other wrong-object/stale actions remain failure and authority diagnostics.
+
+# E4. Specialist RL pushing skill
+
+Question: does a specialist contact skill outperform the scripted/general reactive policy while preserving the hierarchy?
+
+Reuse the selected engine's Unitree asset, actuator configuration, task conventions, and the repository's current RSL-RL/PPO stack. Do not write a new PPO implementation. The policy consumes R1 joint state, base orientation/angular velocity, hand-object relative pose, object-goal relative pose, and previous action as available. It outputs controller-compatible position or residual-position targets, never raw torque as the high-level interface.
+
+Log each reward term separately: object progress toward goal, successful contact, final object-goal accuracy, upright/stability, smooth action, joint-limit penalty, excessive velocity penalty, excessive effort proxy, fall termination, and completion bonus.
+
+Keep `supported/fixed-base skill smoke` and `free-base or standing-substrate skill` distinct. Randomize narrowly over object pose/mass/friction, table friction, joint-target tracking error, action delay, external base perturbation, and object geometry scale. Predeclare nominal, training, and disjoint held-out ranges with a justification.
+
+Use three independent training seeds as an engineering collapse gate, not a population claim. Checkpoint at geometric fractions of each fixed step budget. Before one quarter of a seed's budget, stop only for numerical instability or reset failure. At or after one quarter, stop a seed only after two successive checkpoints show no positive paired progress and the progress slope remains non-positive. Two collapsed or unsafe seeds make the specialist `FUTILE`; one good seed is seed-sensitive and does not pass the engineering gate.
+
+Validate real reset/step first, then train. Select and freeze exactly one checkpoint using DEV and SCREEN only. On CONFIRM compare the frozen specialist against the frozen scripted incumbent using complexity-heavy `MES = 1/4`. The posterior is conditional on that policy and does not establish population-level PPO stability.
+
+Record per-seed numerical/reset stability, step count, throughput, reward terms, checkpoint hashes, paired progress, slope, evaluation outcomes, and safety events. Expose the frozen specialist through the same proposal/skill boundary consumed by E1–E3.
+
+# E5. Learned world-model ranking in shadow mode
+
+Question: can a learned model rank meaningful short chunks better than a non-dynamics progress predictor?
+
+Build a versioned dataset only from measured E1–E4 rollouts. Each sample records rollout/run ID, scene seed, time index, observation history, robot/object/goal state where allowed, skill/phase, candidate action chunk, actual future robot/object state, task-normalized progress, success/failure, failure class, and recovery decision. Split by rollout seed, never by adjacent frames, and prove no temporal leakage.
+
+At selected states generate exactly `K=8` meaningful candidates from different scripted gains, approach directions, small goal perturbations, stochastic policy seeds, a slower safe candidate, hold, retract, and a previous successful recovery pattern as applicable. Do not use thousands of unstructured random joint trajectories. Evaluate each candidate's actual outcome in the simulator.
+
+Implement only these measured variants:
+
+- WM0 non-dynamics progress classifier: compact current state plus candidate summary predicts progress, success probability, and failure probability. This is the incumbent.
+- WM1 privileged dynamics: compact robot/object state plus chunk predicts future robot/object state, progress, and failure using a small MLP or temporal MLP.
+- WM2 observation/visual-latent dynamics: frozen compact encoder plus action-conditioned latent predictor and progress/failure heads. Use rendered observations only if their infrastructure is already available within the gate; never download a giant V-JEPA, DreamZero, VLA, or world-model checkpoint.
+
+If rendered-data infrastructure consumes more than 20 percent of E5's allowance, defer WM2 as `NOT_RUN_BUDGET_GATE` or the precise blocker. Do not create an unrun visual scaffold as a substitute.
+
+Use three model-initialization seeds and freeze architecture/checkpoint before CONFIRM. Before SCREEN, predeclare candidate success exactly as: the selected action chunk is among the actual top two of `K=8` candidates and produces strictly positive task-normalized progress over its evaluation horizon.
+
+SCREEN learned candidates against WM0, select exactly one, and confirm it against WM0 using ordinary `MES = 1/6`. Also report Spearman ranking correlation, normalized selection regret, future-state/progress error, success calibration, failure precision/recall, uncertainty-versus-error, held-out results, inference latency, and memory. These are authority diagnostics, not separate efficacy tests.
+
+P95 inference latency must fit inside the measured E1 refresh slack. Any claimed non-privileged benefit must survive removal of simulator-only features. Split and results must be reported by rollout seed and initialization seed.
+
+WM0, WM1, and WM2 remain offline/shadow-only regardless of `PILOT_SUCCESS`. Observer, veto-critic, and candidate-selector paths may execute only in offline replay or simulator evaluation; do not implement direct latent MPC, CEM, or MPPI. Privileged-only success is an upper bound, never deployment authority.
+
+# E6. Full hierarchy and ablations
+
+Integrate only components already executed by preceding gates:
 
 ```text
-NEAR
-ON
-BLOCKS
-IN
-HELD
-REACHABLE
+mission -> mission agent -> semantic memory -> skill command
+  -> general proposal policy or specialist push policy
+  -> reactive action-chunk executor
+  -> progress monitor
+       -> continue locally | retrigger same skill | escalate to mission agent
+  -> selected R1 simulator/controller substrate
 ```
 
-Track:
-
-- provenance;
-- confidence;
-- last-seen time;
-- stale state;
-- explicit unknown state;
-- changes caused by a skill.
-
-Never treat an old pose as current without considering staleness.
-
-## Tools
-
-Expose typed tools:
-
-```text
-look()
-find(label)
-get_object_state(object_id)
-reach(object_id)
-push(object_id, target_id_or_pose)
-verify(predicate)
-safe_hold()
-```
-
-Tool results must be structured objects.
-
-## Agents
-
-Implement:
-
-```text
-RuleBasedMissionAgent
-OptionalLLMMissionAgent
-```
-
-The rule-based agent is the required reproducible baseline.
-
-The optional language-model adapter may only run when:
-
-```text
-ALLOW_EXTERNAL_LLM=1
-```
-
-and credentials are already present.
-
-Do not add an API dependency to tests.
-
-## Agent wake-up conditions
-
-Run the semantic agent only on:
-
-- mission start;
-- skill completion;
-- skill escalation;
-- material scene-graph change;
-- instruction change.
-
-Do not place the semantic agent in the fast action loop.
-
-## Mission
-
-Use a minimal multi-step task such as:
-
-> Push the target object into the marked region. If another object blocks access, clear the blocker first.
-
-Flow:
-
-```text
-observe scene
-→ identify target
-→ identify blocking relation
-→ push blocker
-→ verify blocker cleared
-→ reacquire target
-→ push target
-→ verify target in goal
-```
-
-## Memory perturbations
-
-Test:
-
-- target moves while not observed;
-- object becomes stale;
-- blocker is removed;
-- two objects have similar labels;
-- failed push changes object pose;
-- instruction changes midway;
-- target disappears.
-
-Compare:
-
-```text
-M0: no persistent memory
-M1: persistent object table
-M2: persistent table with confidence and staleness
-```
-
-Metrics:
-
-- mission success;
-- wrong-object action rate;
-- stale-memory action rate;
-- unnecessary repeated observations;
-- semantic replans;
-- tool calls;
-- recovery after object movement;
-- agent decision latency.
-
-Generate:
-
-```text
-artifacts/reflect_r1/e3/
-docs/reflect_r1/E3_SEMANTIC_MEMORY.md
-```
-
----
-
-# 14. Experiment E4 — Specialist RL pushing skill
-
-This is the first GPU-dependent custom learning experiment.
-
-## Question
-
-Does a specialist contact skill improve robustness beyond the general/scripted reactive action policy while preserving the same hierarchy?
-
-Reuse the repository’s current:
-
-- MJLab environment conventions;
-- RSL-RL implementation;
-- R1 asset;
-- actuator configuration;
-- training scripts;
-- logging.
-
-Do not write another PPO implementation.
-
-## Specialist skill
-
-Create a planar push skill with privileged simulator observations.
-
-Inputs may include:
-
-- R1 joint state;
-- base orientation and angular velocity;
-- hand/object relative position;
-- object/goal relative position;
-- previous action.
-
-Outputs must be controller-compatible joint targets or residual targets.
-
-Do not make raw torque the high-level action interface.
-
-## Reward terms
-
-Use a small interpretable set:
-
-- object progress toward goal;
-- successful contact;
-- final object-goal accuracy;
-- upright/stability;
-- smooth action;
-- joint-limit penalty;
-- excessive velocity penalty;
-- excessive effort proxy;
-- fall termination;
-- task completion bonus.
-
-Keep reward terms separately logged.
-
-## Training modes
-
-Implement:
-
-```text
-supported/fixed-base skill smoke
-free-base or standing-substrate skill, only if supported cleanly
-```
-
-Do not hide the distinction.
-
-## Domain randomization
-
-Start narrowly with:
-
-- object pose;
-- object mass;
-- object friction;
-- table friction;
-- joint target tracking error;
-- action delay;
-- external base perturbation;
-- object geometry scale.
-
-Separate:
-
-```text
-training range
-held-out range
-```
-
-## Overnight behavior
-
-When a remote GPU exists:
-
-1. validate environment reset and step;
-2. train a tiny smoke configuration;
-3. confirm reward changes and checkpoint saves;
-4. run a bounded evaluation;
-5. export the exact continuation command.
-
-Do not run an unbounded full training job.
-
-When no remote GPU exists:
-
-- finish the task/config;
-- run config/import/static tests;
-- prepare the exact remote command;
-- mark results `BLOCKED_REMOTE_GPU`.
-
-Expose the resulting policy through the same `ActionProposalPolicy` or specialist-skill interface used by E1–E3.
-
-Generate:
-
-```text
-artifacts/reflect_r1/e4/
-docs/reflect_r1/E4_SPECIALIST_PUSH.md
-```
-
----
-
-# 15. Experiment E5 — Learned world models in shadow mode
-
-## Question
-
-Can a learned model rank meaningful short action chunks better than a non-dynamics progress predictor?
-
-Do not implement direct latent MPC, CEM or MPPI tonight.
-
-A world model must first demonstrate useful candidate ranking.
-
-## Dataset
-
-Create a versioned dataset from E1–E4 rollouts.
-
-Each sample should contain:
-
-```text
-rollout_id
-episode_seed
-time index
-observation history
-robot state
-object state, when privileged
-goal state
-skill and phase
-candidate action chunk
-actual future robot state
-actual future object state
-progress
-success/failure
-failure class
-recovery decision
-```
-
-Split by rollout/scene seed, not random adjacent frames.
-
-Prevent train/test temporal leakage.
-
-## Candidate generation
-
-At selected states, create `K=8` meaningful candidate chunks from:
-
-- different scripted-policy gains;
-- different approach directions;
-- small goal perturbations;
-- stochastic policy seeds;
-- slower safe candidate;
-- hold;
-- retract;
-- previous successful recovery pattern.
-
-Do not use thousands of unstructured random joint trajectories.
-
-Evaluate candidate outcomes in simulation.
-
-## WM0 — Non-dynamics progress classifier
-
-Input:
-
-```text
-current compact state
-+ candidate action summary
-```
-
-Predict:
-
-```text
-progress
-success probability
-failure probability
-```
-
-This is the baseline to beat.
-
-Use a small model that trains quickly and is easy to inspect.
-
-## WM1 — Privileged dynamics model
-
-Input:
-
-```text
-current robot/object state
-+ action chunk
-```
-
-Predict:
-
-```text
-future robot/object state
-+ progress
-+ failure
-```
-
-This establishes an upper bound when perception is not the bottleneck.
-
-Use a compact MLP or temporal MLP.
-
-## WM2 — Visual or observation-latent dynamics model
-
-Only implement this fully when rendered observations are available without a large infrastructure detour.
-
-Use:
-
-```text
-frozen compact encoder
-+ action-conditioned latent predictor
-+ progress/failure heads
-```
-
-Prefer an already installed compact torchvision encoder or a tiny project-local encoder.
-
-Do not download a giant V-JEPA, DreamZero or VLA checkpoint tonight.
-
-Keep the interface compatible with replacing the encoder later with:
-
-- DINO features;
-- V-JEPA features;
-- a VLA backbone;
-- a learned task-specific encoder.
-
-If visual data is unavailable, implement and test the interface using compact observation features, and mark the visual experiment partial.
-
-## Evaluation
-
-Primary metrics:
-
-### Rank correlation
-
-```text
-Spearman correlation:
-predicted candidate ranking
-vs
-actual simulated candidate ranking
-```
-
-### Selection regret
-
-```text
-best actual candidate outcome
-minus
-actual outcome of model-selected candidate
-```
-
-Also report:
-
-- future-state error;
-- progress error;
-- success calibration;
-- failure precision/recall;
-- uncertainty proxy versus error;
-- in-distribution results;
-- held-out results;
-- inference latency;
-- memory use.
-
-## Authority gate
-
-All world models remain in shadow mode during this run.
-
-Create configuration paths for:
-
-```text
-observer
-veto critic
-candidate selector
-```
-
-but enable critic/selector behavior only in offline replay or simulation evaluation.
-
-A world model may advance conceptually only if it:
-
-- outperforms WM0 on held-out candidate ranking;
-- reduces selection regret;
-- fits within the action-refresh latency budget;
-- does not depend entirely on information unavailable outside simulation.
-
-Do not implement direct latent MPC unless later evidence justifies it.
-
-Generate:
-
-```text
-artifacts/reflect_r1/e5/
-docs/reflect_r1/E5_WORLD_MODEL.md
-docs/reflect_r1/WORLD_MODEL_DECISION.md
-```
-
-`WORLD_MODEL_DECISION.md` must choose one current status:
-
-```text
-INSUFFICIENT_EVIDENCE
-RETAIN_AS_SHADOW_OBSERVER
-PROMISING_AS_CRITIC
-PROMISING_AS_CANDIDATE_SELECTOR
-NOT_CURRENTLY_USEFUL
-```
-
----
-
-# 16. Experiment E6 — Full Reflect-style hierarchy and ablations
-
-Integrate the implemented components into one runner.
-
-## Full hierarchy
-
-```text
-mission
-   ↓
-mission agent
-   ↓
-semantic memory
-   ↓
-skill command
-   ↓
-general proposal policy OR specialist push policy
-   ↓
-reactive action-chunk executor
-   ↓
-progress monitor
-   ├── continue locally
-   ├── retrigger same skill
-   └── escalate to mission agent
-   ↓
-R1 simulation/control substrate
-```
-
-The world model may observe or rank candidates in offline/simulation mode, but it does not command a physical robot.
-
-## Ablations
-
-Create configuration variants:
+Define and attempt runnable variants:
 
 ```text
 A: open-loop scripted/general policy
@@ -1432,538 +579,131 @@ C: B + asynchronous/overlap replacement
 D: C + local retrigger
 E: D + persistent semantic memory
 F: E + semantic-agent replanning
-G: F + specialist RL push, when available
-H: G + progress-classifier critic
-I: G + learned world-model candidate selector, offline/sim only
+G: F + specialist RL push, when its gate permits
+H: G + progress-classifier critic, shadow/offline only
+I: G + learned world-model candidate selector, shadow/offline only
 ```
 
-Use shared evaluation seeds and perturbations.
+Use the common paired scenes and include slight/substantial object movement, blocker insertion, target disappearance, proposal delay, stale chunk, progress stall, instruction change, stale semantic memory, and mild external base disturbance where supported.
 
-## Perturbation suite
+SCREEN runnable A–I variants on 11 blocks. Freeze one complete stack and confirm it against A or the predeclared incumbent on 12 fresh blocks using complexity-heavy `MES = 1/4`. Adjacent component effects and combined 23-block summaries are exploratory only.
 
-Include:
+Require perturbation-specific mechanism diagnostics: retriggering must help stalls/displacements, replanning must help blocker/instruction cases, and memory must help stale-object cases. H and I remain shadow/offline regardless of result.
 
-- object moves slightly;
-- object moves substantially;
-- blocker introduced;
-- target disappears;
-- action generation delayed;
-- stale chunk;
-- progress stall;
-- instruction changes;
-- semantic memory becomes stale;
-- mild external base disturbance where supported.
+Record end-to-end, first-attempt, and eventual success; progress before first wrong decision; perturbation recovery; replan correctness; retries; interventions/unrecoverable episodes; safety rejections; cycle time; action age; component latency; world-model regret; and failure distribution. Never fill missing cells with fabricated results; use the precise status vocabulary.
 
-## Metrics
+# Sim-to-real and conditional cross-engine analysis
 
-Report:
+Sim-to-real work in this campaign is measured staging and documentation, never physical deployment.
 
-- end-to-end mission success;
-- first-attempt success;
-- eventual success;
-- progress before first wrong decision;
-- perturbation recovery;
-- semantic-replan correctness;
-- retries;
-- interventions or unrecoverable episodes;
-- unsafe-action rejections;
-- cycle time;
-- action age;
-- runtime component latency;
-- world-model selection regret;
-- failure distribution.
+Stage 0 requires pinned source, mapping/limits/gains/action-normalization/observation-order audits, checkpoint and ONNX provenance when applicable, and physical mode disabled. Stage 1 records nominal train/play seeds, checkpoint hash, observation/action statistics, and finite in-limit actions. Stage 2 evaluates held-out simulation distributions not used for training.
 
-Generate:
+The randomization/gap registry covers actuator gain, joint tracking error, action delay, observation delay, mass/inertia, ground and object friction, contact geometry, object pose error, camera pose error, external pushes, and controller jitter. For each record nominal, training range, held-out range, real-measurement status, and justification; never choose arbitrary huge ranges.
 
-```text
-artifacts/reflect_r1/e6/ablation_results.csv
-artifacts/reflect_r1/e6/summary.json
-docs/reflect_r1/E6_FULL_HIERARCHY.md
-```
+Stage 3 verifies PyTorch/ONNX numerical agreement where an exported policy exists, normalization, joint order, action scaling, inference latency, invalid-input rejection, and watchdog behavior. Stage 4 may exercise the deployment control path only against the simulator with `network=lo` after the mapping audit passes, logging every state/command mapping.
 
-Do not fabricate missing results. Use explicit values such as:
+Stage 5 documents future shadow deployment where real observations could be recorded and actions computed but no motor command published. Stage 6 documents, but does not execute, supervised physical gates: secured robot, emergency stop, reduced limits, zero-torque/damping procedure, human operator, staged joint groups, safe hold, watchdog, command timeout, abort, and post-run inspection. Physical work remains blocked pending separate human review and authorization outside this campaign.
 
-```text
-NOT_RUN
-BLOCKED_REMOTE_GPU
-BLOCKED_SIMULATOR
-INSUFFICIENT_DATA
-```
+For future hardware failures: classify the layer, reproduce first in simulation, add it to held-out evaluation, change only the relevant component, rerun regression evidence, and repeat every staged gate.
 
----
+Cross-engine paired probes apply only when Isaac G2 is viable. If G2 passes, preserve MuJoCo/Isaac canonical and bounded behavioral probe results without claiming dynamic equivalence. On G2F, preserve classified Isaac failure and official MuJoCo reproduction; do not manufacture a MuJoCo-versus-itself comparison. Never generalize supported-upper-body results to whole-body behavior.
 
-# 17. Sim-to-real methodology
+# R2S2R continuation
 
-Create:
-
-```text
-docs/reflect_r1/SIM2REAL.md
-artifacts/reflect_r1/sim2real_gap_registry.yaml
-```
-
-The methodology must be specific to the actual current R1 stack.
-
-## Stage 0 — Source and mapping verification
-
-Require:
-
-- pinned repository commits;
-- R1 mapping audit;
-- limits/gains audit;
-- action normalization audit;
-- observation ordering audit;
-- ONNX parity;
-- physical mode disabled until human review.
-
-## Stage 1 — Train and play
-
-Require:
-
-- nominal training;
-- deterministic play evaluation;
-- fixed seeds;
-- policy checkpoint hash;
-- observation/action statistics;
-- no NaN or out-of-limit actions.
-
-## Stage 2 — Held-out simulation
-
-Evaluate on distributions not used for training.
-
-Randomization registry should cover:
-
-```text
-actuator gain
-joint tracking error
-action delay
-observation delay
-mass and inertia
-ground friction
-object friction
-contact geometry
-object pose error
-camera pose error
-external pushes
-controller update jitter
-```
-
-For every variable record:
-
-```text
-nominal
-training range
-held-out range
-real measurement status
-reason for range
-```
-
-Do not choose huge arbitrary ranges without justification.
-
-## Stage 3 — ONNX and runtime parity
-
-Verify:
-
-- PyTorch/ONNX numerical agreement;
-- observation normalization agreement;
-- joint ordering;
-- action scaling;
-- inference latency;
-- invalid-input rejection;
-- watchdog behavior.
-
-## Stage 4 — Simulation deployment through loopback
-
-Use only:
-
-```text
-network=lo
-```
-
-Run the deployment control path against the simulator, if supported.
-
-The mapping audit must pass before this stage.
-
-Log every state and command mapping.
-
-## Stage 5 — Shadow deployment
-
-Document a future mode in which:
-
-- real observations may be recorded;
-- policy actions are computed;
-- commands are logged;
-- no motor command is published.
-
-Do not perform it tonight.
-
-## Stage 6 — Supervised physical deployment
-
-Document but do not execute:
-
-- suspended/secured robot;
-- physical emergency stop;
-- reduced command limits;
-- zero-torque and damping procedure;
-- supervised operator;
-- staged joint groups;
-- safe standing/hold;
-- watchdog;
-- automatic command timeout;
-- abort path;
-- post-run hardware inspection.
-
-Physical deployment remains blocked pending human review of the mapping audit.
-
-## Failure-driven update loop
-
-For every future hardware failure:
-
-1. classify the layer;
-2. reproduce it in simulation;
-3. add it first to held-out evaluation;
-4. modify only the relevant model/randomization/runtime component;
-5. rerun regression tests;
-6. pass staged deployment gates again.
-
----
-
-# 18. Deferred Isaac Sim and R2S2R methodology
-
-Create `docs/reflect_r1/ISAAC_R2S2R_LATER.md`.
-
-Do not implement it tonight.
-
-Document this future branch:
+Maintain a precise future real-to-sim-to-real continuation based on current evidence:
 
 ```text
 real workspace capture
-        ↓
-metric static reconstruction
-        ├── visual representation
-        └── aligned collision mesh
-        ↓
-explicit R1 and dynamic-object assets
-        ↓
-remote headless Isaac Sim / Isaac Lab
-        ↓
-visual policy training and evaluation
-        ↓
-cross-engine MuJoCo validation
-        ↓
-staged real deployment
+  -> metric static reconstruction
+       -> visual representation
+       -> aligned collision mesh
+  -> explicit R1 and dynamic-object assets
+  -> remote headless Isaac Sim / Isaac Lab
+  -> visual policy training and evaluation
+  -> conditional cross-engine MuJoCo validation
+  -> separately authorized staged real deployment
 ```
 
-State clearly:
+State that Isaac runs on a supported remote RTX Linux host, never the M2 Max; visual reconstruction and collision geometry are distinct but aligned; manipulated objects remain explicit dynamic assets; and the first ablation compares generic synthetic, manually modelled, and reconstructed scenes. R2S2R is valuable only if it reduces real-data needs or deployment gap. It must not block G0–E6.
 
-- Isaac runs on a supported remote RTX Linux host, not the M2 Max;
-- static visual reconstruction and physical collision geometry are distinct but aligned;
-- manipulated objects remain explicit dynamic assets;
-- the first ablation compares generic synthetic, manually modelled and reconstructed scenes;
-- R2S2R is valuable only if it reduces real-data needs or deployment gap;
-- it must not block the core Reflect-style architecture experiments.
+The continuation document must cite the measured blocker or result that makes R2S2R the next high-information action. It is not an instruction to allocate additional cloud resources in this campaign.
 
----
+# Logging, artifacts, tests, and reproducibility
 
-# 19. Logging and reproducibility
-
-Every rollout should record:
+Define immutable:
 
 ```text
-rollout metadata
-Git SHA
-config
-seed
-platform
-model/checkpoint hash
-events
-observation timestamps
-action-chunk timestamps
-executed actions
-semantic-memory changes
-recovery decisions
-world-model predictions
-metrics
-failure classification
+run_id = UTC timestamp + gate/experiment + engine + seed + short SHA
 ```
 
-Use a simple structure:
+Write each run first to `<run_id>.partial`, fsync/close its records, compute hashes, and atomically rename only after final status is known. Never reuse or overwrite a `run_id`.
+
+Every per-run manifest records producer command and exit code; source, container, asset, config, and checkpoint hashes; engine and revisions; seed and paired-block membership; start/end timestamps; measured and billed-runtime estimate; artifact paths, sizes, and SHA-256; cost-ledger reference; final scientific and implementation statuses; failure classification; and redaction result.
+
+Create a top-level `INDEX.json` that indexes every immutable run, including failures and partial recoveries. Verify it against local and durable-object hashes. Logs record observation/action timestamps, executed actions, memory changes, recovery decisions, model predictions, metrics, and failure classes sufficient to replay chunk acceptance, progress/retrigger decisions, semantic replans, and rankings.
+
+Use the five-minute/checkpoint upload cadence, latest-two-checkpoint rule, 10 GiB uncompressed cap, seven-day lifecycle, and local retrieval verification defined earlier. Record videos only for a short declared visual diagnostic within the WebRTC/artifact quotas.
+
+Never commit containers, caches, secrets, credentials, account data, videos, bulky/raw logs, large rollout datasets, or checkpoints. Commit only compact source, configs consumed by real runs, manifests, indexes, and result reports. Redact before upload and commit.
+
+Tests validate mechanics only and cannot satisfy G1–G3 or E1–E6. Use existing tooling and a virtual monotonic clock. Test, as consumed:
+
+- mapping coverage, skipped slots, uniqueness, one-hot and random round trips, neutral pose, and bounds;
+- chunk expiry/window/order/replacement/blending/dimensions/non-finite rejection/clamping/hold;
+- continue/retrigger/escalate/retry limits/no-loop/reset and hold semantics;
+- memory update/confidence decay/staleness/moved object/duplicate labels/wrong-object prevention/relations;
+- blocker skill choice, failed-skill verification/replan, instruction cancellation, and bounded repeated tool calls;
+- dataset split leakage, paired-count reduction, deterministic posterior integration, predictive-futility calculation, ranking/regret, model save/load, finite predictions, and deterministic evaluation;
+- artifact atomic finalization, hash verification, no overwrite, redaction, and `INDEX.json` completeness;
+- cloud create-spec invariants, cost arithmetic, single-worker fuse, allowed firewall sources/ports, and cleanup target ownership without paid mutation.
+
+Record every exact test command, real exit status, pass/fail count, and failure. A passing test suite cannot upgrade a run status.
+
+# Adaptive execution priority
+
+The worker has a `22h30m` productive soft deadline. G1 and G2 together receive at most six paid hours; unused gate time returns to the experimental pool. At their cap, select official R1 MuJoCo on the same worker.
+
+G3 and E1–E3 form the prerequisite chain because later experiments consume their task, action runtime, recovery behavior, memory, and datasets. After every completed screen, confirmation, checkpoint evaluation, or material throughput update, recompute each feasible remaining decision's conservative upper-bound runtime.
+
+Rank feasible actions by:
 
 ```text
-artifacts/reflect_r1/<experiment>/<run_id>/
-├── metadata.json
-├── config.json
-├── events.jsonl
-├── actions.csv
-├── metrics.json
-└── summary.md
+decision_value_per_hour =
+    posterior_predictive_probability_of_changing_the_current_decision
+    / conservative_upper_bound_runtime_hours
 ```
 
-Record videos only when the simulator supports them cheaply.
-
-Provide a replay command that can reconstruct:
-
-- action-chunk acceptance/rejection;
-- progress decisions;
-- retrigger events;
-- semantic replans;
-- world-model rankings.
-
-Determinism is not the main research track tonight, but complete replayable logs are mandatory.
-
----
-
-# 20. Tests
-
-Use the repository’s existing test tooling where practical.
-
-At minimum test:
-
-## Mapping
-
-- joint-name coverage;
-- skipped motor slots;
-- no duplicates;
-- one-hot mapping;
-- round-trip mapping;
-- neutral pose;
-- bounded random commands.
-
-## Action chunks
-
-- expiry;
-- validity window;
-- out-of-order rejection;
-- replacement;
-- blending;
-- dimensionality;
-- non-finite rejection;
-- clamping.
-
-## Recovery
-
-- continue;
-- retrigger;
-- escalation;
-- retry budget;
-- no infinite loop;
-- reset semantics.
-
-## Memory
-
-- update;
-- confidence decay;
-- staleness;
-- moved object;
-- duplicate labels;
-- wrong-object prevention;
-- relation update.
-
-## Agent
-
-- blocker causes alternate skill;
-- failed skill causes verification/replan;
-- instruction change cancels current mission;
-- repeated failed tool call is bounded.
-
-## World model
-
-- dataset split has no rollout leakage;
-- ranking metric correctness;
-- selection-regret correctness;
-- model save/load;
-- finite predictions;
-- deterministic evaluation.
-
-Use a virtual clock rather than wall-clock sleeps.
-
-Run the local test suite at the end and record exact results.
-
----
-
-# 21. Autonomous execution policy
-
-Follow this priority order:
-
-```text
-P0 safety lock and mapping audit
-P1 repository inventory
-P2 local unit tests
-P3 official R1 smoke path
-P4 minimal push task
-P5 reactive execution
-P6 retrigger and escalation
-P7 semantic memory and replanning
-P8 rollout dataset
-P9 WM0 and privileged world model
-P10 full ablation runner
-P11 specialist RL smoke
-P12 visual latent world model
-```
-
-When blocked:
-
-1. record the exact command;
-2. record stdout/stderr;
-3. explain the likely cause;
-4. try at most one materially different resolution;
-5. continue to the next independent phase.
-
-Do not repeatedly reinstall the same environment.
-
-Do not download very large model checkpoints.
-
-Do not introduce a new major dependency without documenting why the existing stack was insufficient.
-
-Prefer a small deterministic baseline over an unverified sophisticated model.
-
-Do not alter upstream R1 physical deployment behavior except to add safety guards, mapping tests or explicit dry-run support.
-
----
-
-# 22. Final artifacts
-
-Create:
-
-```text
-docs/reflect_r1/OVERNIGHT_REPORT.md
-docs/reflect_r1/NEXT_RUN.md
-docs/reflect_r1/ASSUMPTIONS.md
-docs/reflect_r1/PRODUCTION_GAPS.md
-docs/reflect_r1/EXPERIMENT_TREE.md
-```
-
-## OVERNIGHT_REPORT.md
-
-Include:
-
-### Executive summary
-
-Explain what now works and what does not.
-
-### Environment
-
-- local machine;
-- remote machine, if used;
-- repository SHA;
-- dependency versions.
-
-### Status table
-
-Use:
-
-```text
-PASS
-PARTIAL
-BLOCKED_LOCAL_PLATFORM
-BLOCKED_REMOTE_GPU
-BLOCKED_SIMULATOR
-BLOCKED_DATA
-NOT_ATTEMPTED_AFTER_GATE
-```
-
-Report status for:
-
-```text
-R1 mapping audit
-official R1 baseline
-ONNX export/parity
-minimal manipulation task
-E1 reactive execution
-E2 recovery
-E3 semantic memory
-E4 specialist RL
-E5 world-model ranking
-E6 full hierarchy
-sim-to-real documentation
-```
-
-### Commands executed
-
-Include exact reproducible commands.
-
-### Tests
-
-Include pass/fail counts and failures.
-
-### Experimental results
-
-Include real metrics only.
-
-### Safety findings
-
-Summarize the R1 mapping audit and confirm physical output remained disabled.
-
-### Changed files
-
-List all modified/added files by purpose.
-
-### Blockers
-
-Be precise.
-
-### Highest-value next action
-
-Choose one, based on the results.
-
-## NEXT_RUN.md
-
-Provide exact next commands for:
-
-- local tests;
-- remote official R1 smoke;
-- remote specialist-skill training;
-- experiment evaluation;
-- report generation.
-
-Do not write vague instructions such as “train the model later.”
-
-## PRODUCTION_GAPS.md
-
-Separate:
-
-```text
-research demonstration gap
-runtime reliability gap
-perception gap
-whole-body control gap
-safety gap
-sim-to-real gap
-physical hardware validation gap
-```
-
----
-
-# 23. Completion behavior
-
-Before finishing:
-
-1. run formatting only on files changed by this work;
-2. run relevant tests;
-3. inspect `git diff`;
-4. ensure no secrets were written;
-5. ensure physical deployment remains disabled;
-6. ensure no non-loopback robot command was executed;
-7. ensure documentation matches actual results;
-8. make atomic commits when safe;
-9. do not push unless explicitly authorized.
-
-Print a concise final terminal summary containing:
-
-```text
-workspace path
-branch
-upstream SHA
-commits created
-tests passed/failed
-experiments passed/partial/blocked
-main artifact paths
-mapping-audit status
-physical-deployment status
-highest-value next command
-```
-
-The result should be a **thin, working Reflect-style R1 experimental layer**, not a new robotics platform.
-
-The core scientific output should answer as much as the available environment permits:
-
-> How much capability comes from receding-horizon action refresh, local retriggering, semantic memory, semantic replanning and specialist skills—and does a learned world model improve candidate selection beyond those world-model-free mechanisms?
+Safety and dependencies override the score. Confirming a promising completed screen outranks code-only breadth. After E1–E3, choose among feasible E4–E6 decisions by information per hour, not equal breadth. Preserve paired coverage and confirmation before expanding candidate families.
+
+Any work whose conservative completion, synchronization, and interruption bound cannot finish before `22h30m` receives `NOT_RUN_BUDGET_GATE`. Do not start it, and do not create its scaffold. The campaign prefers trustworthy confirmed prerequisite-chain evidence to shallow unconfirmed coverage, while retaining E1–E6 as required ambitions when measured throughput permits.
+
+# Final report and completion invariants
+
+The final report must include:
+
+1. A gate/fallback table for G0, G1, G2, G2F, G3, and E1–E6 with separate implementation and scientific statuses.
+2. Local/worker environment inventory; all source, image, asset, config, and checkpoint pins/hashes; discovered newer heads; and selected engine.
+3. Every exact executed command, real exit code, immutable `run_id`, seed/block, and artifact location/hash.
+4. Real metrics only, including paired `00/01/10/11` counts, posterior probabilities, MES, screening predictive probabilities, throughput upper bounds, and mechanism diagnostics where applicable.
+5. The complete pre-launch/reconciled cost ledger, rate sources/times, charged-runtime estimate, non-runtime usage, uncertainty, and total incremental spend.
+6. Every campaign-created GCP resource, its ownership labels, create/delete timestamps, and verified final state; separately list untouched existing resources without changing them.
+7. Mapping-audit disposition, physical-deployment flag, loopback guard results, and confirmation that no non-loopback robot command occurred.
+8. Changed files by purpose, compact committed artifacts, test commands/results, blockers/failure classifications, assumptions, and no-secret/redaction verification.
+9. Conditional sim-to-real/cross-engine limits, including explicit supported-upper-body versus whole-body scope.
+10. One exact highest-information continuation command selected from measured evidence, including prerequisites and a conservative runtime/cost bound. Do not provide a vague list of future work.
+
+Before completion, prove all of these invariants:
+
+- no unintended billable resource remains and every created resource is in its declared final state;
+- total incremental cost and uncertainty remain below USD 30;
+- local and durable artifact manifests have SHA-256 parity before temporary cloud deletion;
+- no mutable evidence was overwritten and no secret was stored or committed;
+- `PHYSICAL_DEPLOYMENT_ALLOWED=false` remained set and no robot controller used a non-loopback interface;
+- every claim uses the status vocabulary and matches its real evidence;
+- relevant checks pass, failures are reported, and tests are not presented as rollout evidence;
+- the final diff is truthful, contains no unrelated user change, and logical changes are committed atomically;
+- nothing is pushed, published, or deployed without explicit authorization.
+
+Print a concise terminal summary with workspace, branch, source SHAs, commits, tests, gate/experiment statuses, artifact/index paths, cost, created-resource final states, mapping status, physical status, and the exact continuation command.
+
+The campaign is complete when it has produced the strongest trustworthy experimental answer allowed by the platform, gate order, productive deadline, and USD 30 ceiling—not when every possible file exists.
