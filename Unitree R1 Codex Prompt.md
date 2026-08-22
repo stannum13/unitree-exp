@@ -107,11 +107,13 @@ bounded non-runtime reserve    5.000000000 USD
 unallocated contingency       3.899852512 USD
 ```
 
-Configure `--max-run-duration=23h58m` with `--instance-termination-action=DELETE`. Reserve the remaining two minutes for deletion slippage. Verify the termination timestamp after creation and verify the boot disk auto-delete setting before work begins.
+At the instant the controller sends the create request, compute and record one immutable UTC RFC3339 deletion deadline no later than `23h58m` after that request, or earlier when the authorized runtime calculation requires it. The rendered create command must use `--termination-time=<that-RFC3339-timestamp>`, `--instance-termination-action=DELETE`, and `--no-restart-on-failure`; it must not configure a restart-relative duration fuse. Reserve the remaining two minutes for deletion slippage. After creation, mechanically require `automaticRestart=false`, require the server-reported `terminationTimestamp` to represent the same normalized UTC instant as the recorded absolute deadline, and verify boot-disk auto-delete before work begins. A mismatch is a create-spec failure and triggers ownership-checked deletion.
+
+Never stop or suspend the worker, issue guest shutdown, or clear, extend, or replace its absolute termination timestamp. Restart an experiment process or container rather than the VM. If the worker exits or suffers a host failure, automatic restart remains disabled; the outside controller performs the applicable cleanup. The fixed `--termination-time` deletion is the non-resetting cost backstop.
 
 On-demand is the default. Spot is allowed only after explicitly accepting early termination; its discount never increases authorized runtime. A non-billable capacity failure may select another verified `us-central1` zone. Once any worker first reaches a billable state, it is the campaign's only worker. Do not create a replacement after Spot preemption, bootstrap failure, user-code failure, deletion, or any other billable start.
 
-Before create, require zero campaign-labeled instances in `RUNNING`, `PROVISIONING`, `STAGING`, or `STOPPING`. Do not launch if the cumulative worst-case incremental cost can exceed USD 30. Never create Local SSD, snapshots, reusable images, reserved external addresses, load balancers, Cloud NAT, additional disks, or a second worker.
+Before create, require zero campaign-labeled instances in `RUNNING`, `PROVISIONING`, `STAGING`, `STOPPING`, `SUSPENDING`, or `SUSPENDED`. Do not launch if the cumulative worst-case incremental cost can exceed USD 30. Never create Local SSD, snapshots, reusable images, reserved external addresses, load balancers, Cloud NAT, additional disks, or a second worker.
 
 When prices or specification differ, calculate:
 
@@ -127,7 +129,7 @@ authorized_runtime_hours = floor_to_0.1h(
 
 `conservative_all_in_hourly_rate` is the greater of the live applicable rate and the design-time on-demand rate. `fixed_incremental_cost` is the realized allocation within, not in addition to, the USD 5 non-runtime reserve. Reduce runtime when the bound rises. Never convert contingency or a Spot discount into more runtime.
 
-Before every paid launch, append a pre-launch ledger record containing resource name, labels, rate source and retrieval time, conservative hourly rate, fixed cost, maximum duration, worst-case incremental cost, cumulative worst-case cost, remaining authorized cost, and deletion allowance. Billing alerts are supplemental and are not spend caps.
+Before every paid launch, append a pre-launch ledger record containing resource name, labels, rate source and retrieval time, conservative hourly rate, fixed cost, authorized runtime interval, immutable RFC3339 termination timestamp, worst-case incremental cost, cumulative worst-case cost, remaining authorized cost, and deletion allowance. Billing alerts are supplemental and are not spend caps.
 
 Bound the non-runtime reserve:
 
@@ -143,17 +145,27 @@ Disable verbose logging export. Count streaming bytes on the host and stop WebRT
 
 The M2 Max performs editing, Git, `gcloud`, SSH/IAP, analysis, checksum verification, artifact retrieval, and native macOS WebRTC viewing only. Isaac Sim and GPU R1 simulation run on the single worker. Native CPU MuJoCo may run locally only when it installs without restructuring the workspace; otherwise keep simulation on the worker.
 
-Before VM creation, create a dedicated temporary custom-mode VPC and subnet. Never attach the worker to the default network. Use a dedicated service account whose object permissions are scoped only to the campaign artifact prefix; never grant project Editor, project-wide Storage Admin, or unrelated permissions.
+Before VM creation, create a dedicated temporary custom-mode VPC and subnet. Never attach the worker to the default network. Also create one globally unique, campaign-created regional bucket in `us-central1`; refuse a name collision and never reuse a prefix in an existing bucket. Record the successful bucket-create operation, exact name, creation time, location, labels, metageneration, and initially empty object listing in the ownership ledger. Because the bucket is new and disposable, enable uniform bucket-level access, disable versioning and soft delete, and install only the lifecycle rule defined below without touching any user bucket.
+
+Use a dedicated worker service account. Bind only the minimum required bucket/object permissions on this exact campaign bucket, including object create/get/list, metadata/hold update, generation-conditional delete, and bucket metadata read; do not grant bucket configuration/deletion to the worker or grant project Editor, project-wide Storage Admin, or unrelated permissions. Record every campaign-created IAM binding so the controller can remove that exact binding during teardown.
 
 Give the worker an ephemeral external IPv4 for outbound package, container, and asset downloads and optional native WebRTC. IAP supplies the SSH control path; it does not supply internet egress. Use OS Login and SSH only through IAP. Restrict TCP 22 ingress to `35.235.240.0/20`, target it only to the worker, audit effective firewall rules and service-account targeting, and treat any broad inherited ingress as gate failure.
 
 Headless gates expose no application ports. During the short visual gate only, allow TCP 49100 and UDP 47998 from the M2 Max client's verified current `/32`, use host networking as required by the official native livestream path, meter bytes, and delete both rules immediately afterward. Never expose TCP 8210, noVNC, RDP, Jupyter, Docker, or any streaming service to `0.0.0.0/0`.
 
-Use a dedicated regional object prefix for durable state. Upload manifests, ledgers, logs needed for diagnosis, and checkpoints every five minutes and after each checkpoint. Keep only the latest two checkpoints, cap cumulative uncompressed campaign artifacts at 10 GiB, disable object versioning and soft delete, and apply a seven-day lifecycle.
+Before starting any container, create a campaign-owned artifact root on the worker boot disk, for example `/var/lib/reflect-r1/artifacts`, and bind-mount that same host root read/write into every campaign container at a declared path. Every experiment must write all non-recomputable output there; evidence left only in a container writable layer is invalid. Run the incremental uploader as a host service or outside-controller process that is independent of every experiment container and Compose project, so recreating or tearing down an experiment container cannot destroy or interrupt the only uploader.
 
-At `22h30m`, stop starting work, terminate training/rollouts cleanly, finalize `.partial` runs, flush and upload durable state, verify object checksums, and begin shutdown. The `23h58m` platform deletion is a cost fuse, never transfer logic. Retrieve artifacts to the M2 Max, verify local/object hashes, and only then delete temporary cloud copies. Verify the VM, boot disk, firewall rules, temporary network, service-account bindings, and other campaign resources reach their intended final state.
+Upload every non-recomputable payload at least every five minutes and after every checkpoint: immutable/final run payloads, sequence-numbered recoverable snapshots of active `.partial` state, manifests, `INDEX.json`, cost and ownership ledgers, diagnostic logs, checkpoint files, and measured datasets including the E5 rollout dataset. Before any container repair, recreation, or teardown, the outside uploader must flush closed files plus a recoverable `.partial` snapshot and issue an upload acknowledgement for each object. An acknowledgement exists only after an atomic create with `ifGenerationMatch=0`, server checksum and size parity, a verified temporary hold, and recording of the exact bucket, object name, generation, metageneration, size, and SHA-256 in the ownership ledger. Never overwrite an object name or treat a label or prefix as object ownership.
 
-Never stop, delete, relabel, resize, attach to, or otherwise modify an existing user resource. Campaign labels authorize only resources created by this program and recorded in its ledger; labels must never be applied to pre-existing resources.
+The latest-two rule applies only to ordinary rolling checkpoints that are not otherwise retained. Exempt every frozen, selected, evaluated, or immutable-manifest/`INDEX.json`-referenced checkpoint from pruning until its verified local recovery; a hash without the checkpoint is not recovery. If the retained set would exceed the 10 GiB cumulative uncompressed cap, stop creating new artifacts and return a precise budget/data status rather than deleting an exempt checkpoint. Upload and recover all other non-recomputable run payloads and datasets incrementally; do not trade them away to preserve extra checkpoint breadth.
+
+Configure the new bucket with a delete lifecycle based on `daysSinceCustomTime=7`, not object age. New generations have no Custom-Time and remain under temporary hold, so irreversible cloud expiry cannot begin before recovery. The M2 Max controller retrieves each generation, verifies its SHA-256 against both the host manifest and object acknowledgement, and records a local-recovery acknowledgement. Only then, using generation and metageneration preconditions, release that generation's temporary hold and set its Custom-Time to the recovery-acknowledgement time. This starts the seven-day lifecycle clock. The controller may generation-conditionally delete the recovered cloud copy during final cleanup; the lifecycle is the bounded fallback if that explicit delete is interrupted. Bound the exceptional pre-recovery hold window in the pre-launch ledger; if local recovery still cannot finish by the last cost-safe cleanup time, report the evidence loss truthfully and let the higher-precedence USD 30 ceiling force conditional deletion rather than retain a billable bucket indefinitely.
+
+At `22h30m`, stop starting new experimental work, terminate training/rollout processes cleanly, finalize what can be finalized, snapshot remaining `.partial` state, and let the independent uploader flush and acknowledge durable state. Do not stop, suspend, or shut down the worker. After the M2 Max verifies local/object hashes and records one complete artifact acknowledgement, the outside controller calls the Compute Engine delete API for the VM and waits for the VM and auto-delete boot disk to be `DELETED`. If acknowledgement is not ready, keep only bounded recovery/upload work running until the immutable RFC3339 termination timestamp; the platform `DELETE` still fires at that time because the USD 30 ceiling outranks evidence preservation.
+
+Every normal, failed-create, and early-exit path uses the same ownership-checked cleanup. Before each mutation, match the exact resource name/ID, successful create operation, immutable campaign label set, and ledger record; labels alone never authorize deletion. Then delete and verify `DELETED` in dependency order: optional streaming firewall rules; VM and auto-delete boot disk; remaining campaign firewall rules; subnet; VPC; campaign-created IAM bindings; service account; generation-recorded bucket objects using `ifGenerationMatch`; and, only after an empty listing, the campaign bucket. Remove any other campaign-created disposable resource at its dependency-correct point and record create/delete timestamps and API outcomes. Docker/container state is deleted with the boot disk. Never report completion while a disposable resource outcome is merely stopped, suspended, absent from one listing, pending, or an undefined "final state."
+
+Never stop, delete, relabel, resize, attach to, or otherwise modify an existing user resource. Campaign ownership requires the exact create operation and ledger identity in addition to labels; labels must never be applied to pre-existing resources. A cleanup ownership mismatch blocks that deletion and is reported explicitly rather than widening the target.
 
 # 5. Repository and Git preservation policy
 
@@ -201,8 +213,9 @@ Use only these statuses:
 
 - `PASS`: a non-inferential gate met every declared acceptance condition with real execution evidence.
 - `PILOT_SUCCESS`: a confirmation contrast met the common posterior, safety, and mechanism gates.
-- `INCONCLUSIVE`: confirmation does not meet success or futility, or E1 selects its simplest Pareto-safe fallback without efficacy.
+- `INCONCLUSIVE`: an opened confirmation does not meet success or futility; an engineering fallback selected after that result does not alter the scientific status.
 - `FUTILE`: the declared posterior futility or engineering-collapse rule is met.
+- `SCREEN_FUTILE_NO_CONFIRM`: real SCREEN execution completed, every challenger had posterior-predictive probability of final `GO` below 0.10, no CONFIRM data was opened, and the incumbent was retained. This is an operational SCREEN disposition, not an efficacy or equivalence claim; record `implementation_status=PASS`, `scientific_status=SCREEN_FUTILE_NO_CONFIRM`, and return the saved confirmation budget to adaptive selection.
 - `SAFETY_DISQUALIFIED`: a declared safety event removes control authority.
 - `CODE_ONLY`: implementation exists but qualifying execution does not.
 - `TEST_ONLY`: only mechanical/unit-test evidence exists.
@@ -215,7 +228,7 @@ Use only these statuses:
 - `BLOCKED_DATA`: required measured rollout data is unavailable.
 - `NOT_RUN_BUDGET_GATE`: the conservative bound cannot fit before the productive or cost deadline.
 - `COMBINED_EXPLORATORY`: a SCREEN-plus-CONFIRM 23-block summary with no confirmatory authority.
-- `ISAAC_GATE_FAILED_FALLBACK_SELECTED`: G1 or G2 exhausted its attempt/time/cost gate and official R1 MuJoCo became primary.
+- `ISAAC_GATE_FAILED_FALLBACK_SELECTED`: G1 or G2 exhausted its attempt/time/cost gate and selected the G2F branch; no primary experiment engine is declared until G2F reproduces the official R1 MuJoCo path.
 
 Keep implementation readiness and scientific status in separate report fields. `PASS` and `PILOT_SUCCESS` are never inferred from file existence, imports, tests, converted assets, or checkpoints without evaluation.
 
@@ -226,13 +239,13 @@ G0 is zero-cost and makes no paid mutation. It must:
 1. Verify active `gcloud` authentication, project `project-1178f0de-10fb-4e7e-8e4`, billing linkage, billing permissions needed to inspect live prices, and permission boundaries.
 2. Query exact live applicable compute, disk, external IPv4, storage, operations, logging, and Premium-tier India egress prices with source and timestamp.
 3. Verify L4 quota, `g2-standard-8` quota/capacity in candidate `us-central1` zones, CPU quota, ephemeral IPv4 availability, and `pd-balanced` disk quota without creating billable resources.
-4. Inventory all existing project resources read-only. Prove no campaign-labeled instance is `RUNNING`, `PROVISIONING`, `STAGING`, or `STOPPING`; do not alter any resource.
-5. Render and archive the complete proposed worker, boot disk, auto-delete, `23h58m` termination, network, subnet, ephemeral IP, service account, IAM scope, firewall, labels, startup, artifact prefix, and deletion specification before executing it.
+4. Inventory all existing project resources read-only. Prove no campaign-labeled instance is `RUNNING`, `PROVISIONING`, `STAGING`, `STOPPING`, `SUSPENDING`, or `SUSPENDED`; do not alter any resource.
+5. Render and archive the complete proposed worker, boot disk, auto-delete, immutable RFC3339 `--termination-time` no later than `23h58m`, `--instance-termination-action=DELETE`, `--no-restart-on-failure`, network, subnet, ephemeral IP, service account, bucket-scoped IAM, firewall, labels, startup, host artifact bind mount, unique regional bucket, and ownership-checked deletion specification before executing it. Assert the rendered contract has no restart-relative duration fuse and no stop or suspend path.
 6. Audit effective ingress, including inherited hierarchical and VPC rules. Any broad ingress that reaches the proposed worker blocks create.
 7. Pin and verify all source SHAs, image tags, expected digests when known, and software targets. Pin Unitree at `1425b15f73bd4095f0df53709d7c389c3eb9e790`; record newer heads separately.
 8. Inventory the pinned Unitree `get_spec()` and loader mutations and complete the source-derived R1 motor mapping/limits/gains/action-normalization audit.
 9. Preserve `PHYSICAL_DEPLOYMENT_ALLOWED=false` and verify deployment-interface guards fail closed for non-loopback names and addresses.
-10. Create the cost ledger and dedicated regional artifact-prefix plan, including lifecycle, quotas, upload cadence, checksum scheme, and cleanup ownership.
+10. Create the cost ledger and unique regional campaign-bucket plan, including bucket-empty/name-collision checks, object-generation ownership, temporary holds, Custom-Time lifecycle, quotas, host bind mount, independent uploader, upload/local-recovery acknowledgements, and cleanup ownership.
 11. Compute worst-case spend with the greater live/design rates, fixed allocations, reserve, contingency, and deletion allowance. Refuse creation unless the result is below USD 30.
 
 G0 `PASS` requires recorded outputs and exit codes for every check, a complete pre-launch ledger entry, safe mapping disposition, and a fully rendered create specification. Missing auth or quota receives the precise blocker. G0 never probes physical hardware.
@@ -257,7 +270,7 @@ Attempt G2 only after G1 `PASS`. It receives one primary conversion attempt plus
 
 1. From pinned Unitree source, call `get_spec()`, compile with its repository-pinned MuJoCo stack, serialize the resolved `MjSpec`, and materialize every loader-injected asset into a self-contained relative bundle.
 2. In a clean process that does not import Unitree Python, recompile the materialized bundle with the same MuJoCo version and require exact reproduction of the original compiled model.
-3. Export a canonical manifest of bodies, joints, geoms, sites, tree topology, actuators, names/types/order, limits, mass, COM, inertia, home pose, gains, armature, collision enablement and dimensionality, contact masks, friction, solver settings, and action transforms.
+3. Export a canonical manifest of bodies, joints, geoms, sites, tree topology, actuators, names/types/order, limits, mass, COM, inertia, home pose, gains, armature, collision enablement and dimensionality, contact masks, contact priority, loader-selected collision policy, friction, solver settings, and action transforms for every relevant geom/contact pair.
 4. Import the self-contained MJCF with Isaac Sim's official MJCF importer and record every importer option.
 5. Explicitly transfer loader-side actuator groups, stiffness, damping, effort limits, armature, soft-limit factor, home state, collision policy, and per-joint action scale into the Isaac R1 configuration.
 6. Reopen the generated USD headlessly and mechanically compare its manifest with the canonical manifest.
@@ -270,8 +283,8 @@ Resolve values from pinned source rather than memory. At design time require fiv
 
 Apply these acceptance tolerances:
 
-- Canonical bundle versus original compiled `MjSpec`: exact names, counts, types, order, topology, actuator membership/order, and collision enablement where specified; all canonical numeric physical properties within absolute or relative `1e-12`.
-- Isaac metadata/config versus canonical manifest: exact names, counts, topology, actuator membership, action order, and collision policy; joint limits and home within `1e-6 rad`; mass within `1e-5` relative or `1e-7 kg`; COM within `1e-6 m`; inertia within `1e-5` relative or `1e-9 kg*m^2`; actuator/control values within `1e-7` relative or `1e-9` absolute.
+- Canonical bundle versus original compiled `MjSpec`: exact names, counts, types, order, topology, actuator membership/order, and compiled collision enablement, contact masks, dimensionality, priority, and loader-selected collision policy for every relevant geom/contact pair, with no default-value or conditional exception; all canonical numeric physical properties within absolute or relative `1e-12`.
+- Isaac metadata/config versus canonical manifest: exact names, counts, topology, actuator membership, action order, and the same complete collision policy for every relevant geom/contact pair; joint limits and home within `1e-6 rad`; mass within `1e-5` relative or `1e-7 kg`; COM within `1e-6 m`; inertia within `1e-5` relative or `1e-9 kg*m^2`; actuator/control values within `1e-7` relative or `1e-9` absolute.
 - Forward kinematics at home and three deterministic poses within 10 percent of every joint range: per-link translation error `<=0.5 mm` and orientation geodesic error `<=0.05 degrees`.
 - Identical two-second bounded contact-free targets: joint RMSE `<=0.02 rad`, maximum error `<=0.05 rad`, and effort overshoot `<=1%`.
 - Floating-base five-second standing: finite state, penetration `<=2 mm`, base-height drift after the first second `<=5 mm`, no monotonically growing kinetic energy, and hard-limit overshoot `<=1e-4 rad`.
@@ -287,7 +300,7 @@ G2F is the planned experimental fallback. It does not retry Isaac and never crea
 
 From the pinned `unitree_rl_mjlab` checkout, reproduce the official R1 task registration/config load and official reset/step/play path on the same worker before changing the manipulation task. Discover commands from pinned source, run them with bounded timeouts and deterministic seeds, and record finite state, exact exit status, engine/package versions, config, source SHA, and retrieved artifact hashes.
 
-Use MuJoCo as primary only after the official reproduction is real. Do not require a MuJoCo-versus-itself cross-engine replay. If official reproduction cannot run, report `BLOCKED_SIMULATOR` or `RUN_FAILED` rather than building later experiment scaffolding.
+Only a G2F `PASS` with that real official reproduction sets `selected_engine=mujoco` and grants MuJoCo primary-engine authority. Do not require a MuJoCo-versus-itself cross-engine replay. If official reproduction cannot run, report `BLOCKED_SIMULATOR` or `RUN_FAILED`, leave `selected_engine` and primary-engine authority unset, and do not build later experiment scaffolding.
 
 # G3. Minimal R1 manipulation vertical slice
 
@@ -404,7 +417,7 @@ Update each cell parameter with its count. Compute `P(Delta > 0)` and `P(Delta >
 
 For ordinary modules, set `MES = 2/12 = 1/6`. For E4 and the full-stack E6 confirmation, set `MES = 3/12 = 1/4`.
 
-For every SCREEN candidate, compute the predictive probability that a fresh 12-block confirmation panel will meet final success, using the Dirichlet-multinomial distribution. Simulated CONFIRM panels must be analyzed from the original Jeffreys prior, not the SCREEN posterior. Drop a candidate when that predictive chance is below 0.10. Among remaining candidates select exactly one challenger per predeclared incumbent by expected `Delta`, subject to all safety and mechanism diagnostics. SCREEN probabilities are operational only.
+For every SCREEN candidate, compute the predictive probability that a fresh 12-block confirmation panel will meet final success, using the Dirichlet-multinomial distribution. Simulated CONFIRM panels must be analyzed from the original Jeffreys prior, not the SCREEN posterior. Drop a candidate when that predictive chance is below 0.10. If one or more candidates survive, select exactly one challenger per predeclared incumbent by expected `Delta`, subject to all safety and mechanism diagnostics. If none survives, do not open CONFIRM, retain the incumbent, report `SCREEN_FUTILE_NO_CONFIRM`, and return the saved confirmation budget to adaptive selection. SCREEN probabilities and this no-survivor disposition are operational only and make no efficacy, inferiority, equivalence, or CONFIRM-level `FUTILE` claim.
 
 On CONFIRM:
 
@@ -442,13 +455,13 @@ Implement and SCREEN all four modes on the same 11 blocks:
 - C — asynchronous latest-valid chunk: the executor continues the current safe chunk while the proposal worker handles the newest observation, then replaces only future actions when a newer valid chunk arrives.
 - D — overlap/blend replacement: blend only the future unexecuted portion of the new chunk with the current command trajectory; never rewrite executed actions.
 
-Predeclare the incumbent, normally A, before SCREEN. Apply a seeded lateral object displacement during reach/push and, according to the fixed perturbation suite, goal change and proposal delay. The primary binary endpoint is recovery from the seeded perturbation within the fixed predeclared deadline. Use ordinary `MES = 1/6`. Select and freeze exactly one Pareto-safe challenger and compare it with the incumbent on CONFIRM.
+Predeclare the incumbent, normally A, before SCREEN. Apply a seeded lateral object displacement during reach/push and, according to the fixed perturbation suite, goal change and proposal delay. The primary binary endpoint is recovery from the seeded perturbation within the fixed predeclared deadline. Use ordinary `MES = 1/6`. When at least one Pareto-safe challenger survives SCREEN, select and freeze exactly one and compare it with the incumbent on CONFIRM; otherwise follow `SCREEN_FUTILE_NO_CONFIRM` and retain A.
 
 Enforce: expired chunks never execute; older-observation chunks never replace newer chunks; dimensions match the verified R1 action interface; values are finite; targets are clamped to configured limits; a valid safe hold always exists; queues are bounded; and policy failure cannot emit stale actions indefinitely.
 
 Record task success, object-goal final error, perturbation recovery/deadline, observation-to-action age, chunk age, proposal latency, executor idle time, expired-action count, replacement count, target-joint discontinuity, action jerk proxy, safety rejections, and rollout duration. Action age, discontinuity, and jerk are directional/Pareto diagnostics, not additional inferential tests; require the prespecified direction and no limit-violating Pareto regression.
 
-If no mode meets the efficacy rule, choose the simplest Pareto-safe mode and report `INCONCLUSIVE`. Selection must be measured, never intuitive.
+If CONFIRM opens and the contrast does not reach `PILOT_SUCCESS`, report its exact `FUTILE` or `INCONCLUSIVE` result; any simplest Pareto-safe engineering fallback does not relabel that result. If no challenger survives SCREEN, retain the incumbent and report `SCREEN_FUTILE_NO_CONFIRM`. Selection must be measured, never intuitive.
 
 # E2. Skill retriggering and escalation
 
@@ -474,7 +487,7 @@ unsafe action                   -> ESCALATE or bounded safe failure
 
 Also require zero-tolerance checks for target removal, stale chunks, retry exhaustion, unsafe actions, safe hold, and infinite-loop prevention. A recurrence of a deterministic-case failure in stochastic evaluation disqualifies the configuration.
 
-Freeze recovery-rule candidates from DEV, SCREEN them on paired blocks, and confirm exactly one challenger against the predeclared incumbent. A stochastic block succeeds only when it makes the correct recovery decision and then recovers within the fixed deadline. Use ordinary `MES = 1/6`.
+Freeze recovery-rule candidates from DEV and SCREEN them on paired blocks. When a challenger survives, freeze exactly one and confirm it against the predeclared incumbent; otherwise retain the incumbent and report `SCREEN_FUTILE_NO_CONFIRM`. A stochastic block succeeds only when it makes the correct recovery decision and then recovers within the fixed deadline. Use ordinary `MES = 1/6`.
 
 Record eventual success, decision, recovery latency, retries, unnecessary retriggers/escalations, failed escalation, safe-hold result, and loop-bound result. Any loop, missed unsafe escalation, retry breach, failed hold, or deterministic-case recurrence is `SAFETY_DISQUALIFIED`.
 
@@ -513,7 +526,7 @@ SCREEN M1 and M2 against M0 on the same blocks:
 - M1: persistent object table.
 - M2: persistent table with confidence and staleness.
 
-Freeze one persistent-memory challenger and confirm it against M0. A block succeeds only when the correct-object mission completes without a stale-memory action. Use ordinary `MES = 1/6`.
+When a persistent-memory challenger survives SCREEN, freeze exactly one and confirm it against M0; otherwise retain M0 and report `SCREEN_FUTILE_NO_CONFIRM`. A block succeeds only when the correct-object mission completes without a stale-memory action. Use ordinary `MES = 1/6`.
 
 Record mission success, wrong-object actions, stale-memory actions, unnecessary observations, semantic replans, tool calls, movement recovery, and agent latency. Any wrong-object safety consequence is `SAFETY_DISQUALIFIED`; other wrong-object/stale actions remain failure and authority diagnostics.
 
@@ -529,7 +542,7 @@ Keep `supported/fixed-base skill smoke` and `free-base or standing-substrate ski
 
 Use three independent training seeds as an engineering collapse gate, not a population claim. Checkpoint at geometric fractions of each fixed step budget. Before one quarter of a seed's budget, stop only for numerical instability or reset failure. At or after one quarter, stop a seed only after two successive checkpoints show no positive paired progress and the progress slope remains non-positive. Two collapsed or unsafe seeds make the specialist `FUTILE`; one good seed is seed-sensitive and does not pass the engineering gate.
 
-Validate real reset/step first, then train. Select and freeze exactly one checkpoint using DEV and SCREEN only. On CONFIRM compare the frozen specialist against the frozen scripted incumbent using complexity-heavy `MES = 1/4`. The posterior is conditional on that policy and does not establish population-level PPO stability.
+Validate real reset/step first, then train. Select and freeze exactly one checkpoint using DEV and SCREEN only when a specialist challenger survives predictive futility. On CONFIRM compare that frozen specialist against the frozen scripted incumbent using complexity-heavy `MES = 1/4`; if none survives, retain the scripted incumbent and report `SCREEN_FUTILE_NO_CONFIRM`. The posterior is conditional on that policy and does not establish population-level PPO stability.
 
 Record per-seed numerical/reset stability, step count, throughput, reward terms, checkpoint hashes, paired progress, slope, evaluation outcomes, and safety events. Expose the frozen specialist through the same proposal/skill boundary consumed by E1–E3.
 
@@ -551,7 +564,7 @@ If rendered-data infrastructure consumes more than 20 percent of E5's allowance,
 
 Use three model-initialization seeds and freeze architecture/checkpoint before CONFIRM. Before SCREEN, predeclare candidate success exactly as: the selected action chunk is among the actual top two of `K=8` candidates and produces strictly positive task-normalized progress over its evaluation horizon.
 
-SCREEN learned candidates against WM0, select exactly one, and confirm it against WM0 using ordinary `MES = 1/6`. Also report Spearman ranking correlation, normalized selection regret, future-state/progress error, success calibration, failure precision/recall, uncertainty-versus-error, held-out results, inference latency, and memory. These are authority diagnostics, not separate efficacy tests.
+SCREEN learned candidates against WM0. When a candidate survives, select exactly one and confirm it against WM0 using ordinary `MES = 1/6`; otherwise retain WM0 and report `SCREEN_FUTILE_NO_CONFIRM`. Also report Spearman ranking correlation, normalized selection regret, future-state/progress error, success calibration, failure precision/recall, uncertainty-versus-error, held-out results, inference latency, and memory. These are authority diagnostics, not separate efficacy tests.
 
 P95 inference latency must fit inside the measured E1 refresh slack. Any claimed non-privileged benefit must survive removal of simulator-only features. Split and results must be reported by rollout seed and initialization seed.
 
@@ -586,7 +599,7 @@ I: G + learned world-model candidate selector, shadow/offline only
 
 Use the common paired scenes and include slight/substantial object movement, blocker insertion, target disappearance, proposal delay, stale chunk, progress stall, instruction change, stale semantic memory, and mild external base disturbance where supported.
 
-SCREEN runnable A–I variants on 11 blocks. Freeze one complete stack and confirm it against A or the predeclared incumbent on 12 fresh blocks using complexity-heavy `MES = 1/4`. Adjacent component effects and combined 23-block summaries are exploratory only.
+SCREEN runnable A–I variants on 11 blocks. When a complete-stack challenger survives, freeze exactly one and confirm it against A or the predeclared incumbent on 12 fresh blocks using complexity-heavy `MES = 1/4`; otherwise retain the predeclared incumbent and report `SCREEN_FUTILE_NO_CONFIRM`. Adjacent component effects and combined 23-block summaries are exploratory only.
 
 Require perturbation-specific mechanism diagnostics: retriggering must help stalls/displacements, replanning must help blocker/instruction cases, and memory must help stale-object cases. H and I remain shadow/offline regardless of result.
 
@@ -642,7 +655,7 @@ Every per-run manifest records producer command and exit code; source, container
 
 Create a top-level `INDEX.json` that indexes every immutable run, including failures and partial recoveries. Verify it against local and durable-object hashes. Logs record observation/action timestamps, executed actions, memory changes, recovery decisions, model predictions, metrics, and failure classes sufficient to replay chunk acceptance, progress/retrigger decisions, semantic replans, and rankings.
 
-Use the five-minute/checkpoint upload cadence, latest-two-checkpoint rule, 10 GiB uncompressed cap, seven-day lifecycle, and local retrieval verification defined earlier. Record videos only for a short declared visual diagnostic within the WebRTC/artifact quotas.
+Use the host bind-mounted campaign artifact root, independent uploader, five-minute/checkpoint cadence, generation-specific ownership and acknowledgements, retained-checkpoint exemptions, 10 GiB uncompressed cap, temporary holds, post-recovery Custom-Time, seven-day lifecycle, and local retrieval verification defined earlier. Incrementally include immutable run payloads, measured datasets, and recoverable `.partial` snapshots. Record videos only for a short declared visual diagnostic within the WebRTC/artifact quotas.
 
 Never commit containers, caches, secrets, credentials, account data, videos, bulky/raw logs, large rollout datasets, or checkpoints. Commit only compact source, configs consumed by real runs, manifests, indexes, and result reports. Redact before upload and commit.
 
@@ -654,14 +667,14 @@ Tests validate mechanics only and cannot satisfy G1–G3 or E1–E6. Use existin
 - memory update/confidence decay/staleness/moved object/duplicate labels/wrong-object prevention/relations;
 - blocker skill choice, failed-skill verification/replan, instruction cancellation, and bounded repeated tool calls;
 - dataset split leakage, paired-count reduction, deterministic posterior integration, predictive-futility calculation, ranking/regret, model save/load, finite predictions, and deterministic evaluation;
-- artifact atomic finalization, hash verification, no overwrite, redaction, and `INDEX.json` completeness;
-- cloud create-spec invariants, cost arithmetic, single-worker fuse, allowed firewall sources/ports, and cleanup target ownership without paid mutation.
+- artifact atomic finalization, host bind mounts, independent-uploader survival across container recreation, generation ownership, hold/Custom-Time transitions, checkpoint-retention exemptions, hash verification, no overwrite, redaction, and `INDEX.json` completeness;
+- cloud create-spec invariants including absolute RFC3339 termination and `automaticRestart=false`, cost arithmetic, single-worker fuse, allowed firewall sources/ports, unique-bucket preconditions, and dependency-ordered cleanup target ownership without paid mutation.
 
 Record every exact test command, real exit status, pass/fail count, and failure. A passing test suite cannot upgrade a run status.
 
 # Adaptive execution priority
 
-The worker has a `22h30m` productive soft deadline. G1 and G2 together receive at most six paid hours; unused gate time returns to the experimental pool. At their cap, select official R1 MuJoCo on the same worker.
+The worker has a `22h30m` productive soft deadline. G1 and G2 together receive at most six paid hours; unused gate time returns to the experimental pool. At their cap, select the G2F branch on the same worker; only successful official reproduction in G2F makes MuJoCo primary.
 
 G3 and E1–E3 form the prerequisite chain because later experiments consume their task, action runtime, recovery behavior, memory, and datasets. After every completed screen, confirmation, checkpoint evaluation, or material throughput update, recompute each feasible remaining decision's conservative upper-bound runtime.
 
@@ -686,7 +699,7 @@ The final report must include:
 3. Every exact executed command, real exit code, immutable `run_id`, seed/block, and artifact location/hash.
 4. Real metrics only, including paired `00/01/10/11` counts, posterior probabilities, MES, screening predictive probabilities, throughput upper bounds, and mechanism diagnostics where applicable.
 5. The complete pre-launch/reconciled cost ledger, rate sources/times, charged-runtime estimate, non-runtime usage, uncertainty, and total incremental spend.
-6. Every campaign-created GCP resource, its ownership labels, create/delete timestamps, and verified final state; separately list untouched existing resources without changing them.
+6. Every campaign-created GCP resource, its exact ownership proof, create/delete timestamps, API outcome, and verified `DELETED` state; separately list untouched existing resources without changing them.
 7. Mapping-audit disposition, physical-deployment flag, loopback guard results, and confirmation that no non-loopback robot command occurred.
 8. Changed files by purpose, compact committed artifacts, test commands/results, blockers/failure classifications, assumptions, and no-secret/redaction verification.
 9. Conditional sim-to-real/cross-engine limits, including explicit supported-upper-body versus whole-body scope.
@@ -694,7 +707,7 @@ The final report must include:
 
 Before completion, prove all of these invariants:
 
-- no unintended billable resource remains and every created resource is in its declared final state;
+- no unintended billable resource remains and every campaign-created disposable resource has an ownership-checked `DELETED` outcome, including VM, boot disk, firewall rules, subnet, VPC, IAM bindings, service account, object generations, and bucket;
 - total incremental cost and uncertainty remain below USD 30;
 - local and durable artifact manifests have SHA-256 parity before temporary cloud deletion;
 - no mutable evidence was overwritten and no secret was stored or committed;
