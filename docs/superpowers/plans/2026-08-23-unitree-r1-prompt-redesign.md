@@ -4,24 +4,36 @@
 
 **Goal:** Replace `Unitree R1 Codex Prompt.md` with one internally coherent, experiment-first autonomous research prompt that provisions one cost-fused headless Isaac Sim worker on GCP, validates or rejects an R1 port, falls back to official R1 MuJoCo, and executes E1–E6 under decision-grade stopping rules.
 
-**Architecture:** First commit the current prompt byte-for-byte as its immutable baseline. Then rewrite the complete prompt in one atomic commit so no intermediate commit contains contradictory simulator priorities, cost rules, or inference semantics. Finish with an independent critical review and a separate correction commit only when evidence-backed findings require it.
+**Architecture:** First commit the current prompt byte-for-byte as its immutable baseline. Then rewrite the complete prompt in one atomic commit so no intermediate commit contains contradictory simulator priorities, cost rules, or inference semantics. Finish with independent critical reviews and evidence-backed correction commits. The final whole-branch audit amends this plan and the approved specification together with the prompt so all three remain one source-of-truth contract.
 
 **Tech Stack:** Markdown, Git, `shasum`, `rg`, Zsh assertions, GCP `g2-standard-8`, Isaac Sim 6.0.1, Isaac Lab `v3.0.0-beta2.patch1`, Unitree `unitree_rl_mjlab`.
 
 ## Global Constraints
 
-- Modify only `Unitree R1 Codex Prompt.md` during prompt implementation.
+- Modify only `Unitree R1 Codex Prompt.md` during initial prompt implementation. An audit-driven coherence commit may update that prompt, this plan, and the approved specification together, and no other tracked file.
 - Use `docs/superpowers/specs/2026-08-22-unitree-r1-experiment-first-redesign.md` as the approved source of truth.
 - Physical R1 control remains forbidden; `PHYSICAL_DEPLOYMENT_ALLOWED=false` has no override.
 - Incremental program-attributable GCP list-price spend must remain below USD 30 before tax, credits, discounts, and currency conversion.
 - Do not modify existing GCP resources or unrelated workspace files.
-- Use at most one successfully provisioned paid `g2-standard-8` worker, automatic deletion at `23h58m`, and productive soft stop at `22h30m`.
+- Use at most one successfully provisioned paid `g2-standard-8` worker, an absolute `terminationTime` and independent watchdog hard deadline no later than create plus `23h45m`, and productive soft stop at `22h30m`.
 - Pin Isaac Sim 6.0.1 and Isaac Lab tag `v3.0.0-beta2.patch1`, commit `ffff603eafc6b74264a5261cc0183d6a65390d78`.
 - Pin Unitree `unitree_rl_mjlab` commit `1425b15f73bd4095f0df53709d7c389c3eb9e790` as authoritative for this campaign. Record newer upstream heads without silently replacing the pin.
 - Official R1 MuJoCo is the planned fallback whenever G1 or G2 does not pass its bounded gate.
 - Imports, tests, synthetic fixtures, schemas, runners, converted USD files, and unevaluated checkpoints are not experimental evidence.
 - `SCREEN` uses 11 paired blocks only for selection/futility. `CONFIRM` uses 12 untouched paired blocks as the sole efficacy dataset.
-- Before each commit, require an empty staged index, stage only the named file, and assert the cached name set before committing.
+- Before each commit, require an empty staged index, stage only the task-owned file set, and assert the cached name set before committing.
+
+### Audit-driven ratification
+
+The following contract replaces any conflicting historical wording in this plan:
+
+- Ordinary campaign autonomy cannot create/enable the persistent watchdog workflow, role definitions, execution service account, project IAM binding, or ownership tag. Missing prerequisites yield `BLOCKED_GCP_WATCHDOG` before spend plus an exact separately authorized one-time operator-bootstrap manifest/command sequence (immutable names, definitions/permission hashes, owner, cost, verification, and teardown responsibility). Only separate operator execution and attestation permits a rerun; prerequisite work is not experiment progress.
+- For each of at most two capacity attempts, create the unique bucket in `BASE`; start one Workflows execution with concurrency overflow/backlogging disabled and `LOG_NONE`; capture exact execution name/revision; poll to `ACTIVE` and reject `QUEUED`; then install/verify the execution-ID-derived `ACTIVE` policy. The already-active workflow waits a bounded arming interval before `ARMED_PRECREATE`. Wrong revision/state/timeout means cleanup and no Compute insert.
+- Voluntary deletion requires stopping all experiment writers, finalizing recoverable partial state, draining the uploader, generation-specific acknowledgement of every manifest-referenced non-recomputable artifact plus final `INDEX.json` and ownership/cost ledgers, local retrieval/hash verification, proof no producer remains, and `ACTIVE` to `SEALED`; only then delete VM/disk/network, objects/bucket, and worker service account. The immutable hard deadline remains cost-first.
+- The exact REST body contains metadata items `enable-oslogin=TRUE` and `block-project-ssh-keys=TRUE`; post-create verification checks effective values, exact controller OS Login/IAP/`iam.serviceAccounts.actAs` authority, and no unexpected login/admin principal.
+- An alternate-zone attempt is permitted only after an enumerated terminal nonbillable capacity error, proof no VM/disk/billable state existed, and cleanup/cancellation of every first-attempt resource. It uses a fresh nonce, requestId, bucket, execution, deadlines, body, and preflight. Any ambiguity, survivor, or billable state forbids it. Aggregate bounds are one live attempt, one worker ever billable, one successful worker, 1,000 object generations, 20,000 workflow internal steps, and USD 0.50 watchdog/API.
+- Cost authorization uses `operational_envelope=26.100147488`, `remaining_envelope=operational_envelope-cumulative_realized_campaign_cost`, `remaining_nonruntime_reserve=max(0,5.000000000-cumulative_realized_nonruntime_cost)`, and `authorized_compute_hours=min(23.75,floor_to_0.1h(max(0,(remaining_envelope-remaining_nonruntime_reserve)/conservative_all_in_hourly_rate-0.25)))`. All prior attempt/API/storage costs enter realized totals; the 0.25-hour allowance is subtracted once; contingency is never runtime. Initially this yields 23.7 hours while the 24-hour rate product remains conservative.
+- Screening uses `SCREEN_FUTILE_NO_CONFIRM` or `SCREEN_DIAGNOSTIC_REJECT_NO_CONFIRM` as applicable. Predictive probability refers explicitly to the posterior component of `PILOT_SUCCESS`: `P(Delta>0)>=0.95` and `P(Delta>=MES)>=0.50`; safety/mechanism gates remain separate.
 
 ---
 
@@ -181,11 +193,11 @@ bounded non-runtime reserve    5.000000000 USD
 unallocated contingency       3.899852512 USD
 ```
 
-- Use `23h58m` with termination action `DELETE` and budget two minutes of deletion slippage.
+- Use an absolute `terminationTime` no later than create plus `23h45m`, termination action `DELETE`, and the independently armed watchdog; do not use a restart-relative maximum-duration field.
 - Use the greater of live applicable rate and design-time on-demand rate.
-- Spot discount never increases runtime.
-- Allow at most one worker after it first reaches a billable state; a non-billable capacity failure may choose another verified zone.
-- Do not create a replacement worker after the first worker has reached a billable state, including after Spot preemption or user-code failure.
+- Standard/on-demand is mandatory; Spot is forbidden.
+- Allow at most a primary plus one alternate-zone attempt under the ratified nonbillable-capacity proof and cleanup protocol.
+- Do not create a replacement worker after any billable state or user-code failure.
 - Before create, require zero labeled instances in `RUNNING`, `PROVISIONING`, `STAGING`, or `STOPPING`.
 - Verify termination timestamp and boot-disk auto-delete.
 - Prohibit Local SSD, snapshots, reusable images, reserved addresses, load balancers, Cloud NAT, and additional disks.
@@ -217,7 +229,7 @@ Implement approved-spec `Compute topology`, `Network and access`, and deletion-s
 - Never expose TCP 8210, noVNC, RDP, Jupyter, Docker, or streaming to `0.0.0.0/0`.
 - Upload durable state every five minutes and after each checkpoint to a regional object prefix.
 - Keep the latest two checkpoints, cap cumulative uncompressed artifacts at 10 GiB, disable versioning and soft delete, and apply a seven-day lifecycle.
-- At `22h30m`, stop new work, flush, upload, verify object checksums, and begin shutdown. Treat `23h58m` deletion as the cost fuse, never as transfer logic.
+- At `22h30m`, stop new work. Require the all-artifact acknowledgement, local hash verification, no-live-producer proof, and `ACTIVE` to `SEALED` transition before voluntary deletion. Treat the absolute `23h45m` watchdog/`terminationTime` deadline as the cost fuse, never as transfer logic.
 - Retrieve artifacts locally, verify hashes, and only then delete temporary cloud copies.
 - Never stop, delete, relabel, or otherwise modify an existing user resource.
 
@@ -389,7 +401,15 @@ required=(
   '595.58.03'
   'v3.0.0-beta2.patch1'
   '0.879172812'
-  '23h58m'
+  '23h45m'
+  'terminationTime'
+  'compute/v1/projects/{project}/zones/{zone}/instances?requestId='
+  'BLOCKED_GCP_WATCHDOG'
+  'SCREEN_FUTILE_NO_CONFIRM'
+  'SCREEN_DIAGNOSTIC_REJECT_NO_CONFIRM'
+  'enable-oslogin'
+  'block-project-ssh-keys'
+  'every manifest-referenced non-recomputable artifact'
   '22h30m'
   '35.235.240.0/20'
   'G2F'
@@ -411,6 +431,19 @@ for marker in "${required[@]}"; do
     exit 1
   }
 done
+
+if rg -Fq -- '23h58m' 'Unitree R1 Codex Prompt.md'; then
+  echo 'forbidden obsolete 23h58m contract' >&2
+  exit 1
+fi
+if rg -q '"maxRunDuration"[[:space:]]*:' 'Unitree R1 Codex Prompt.md'; then
+  echo 'forbidden executable maxRunDuration contract' >&2
+  exit 1
+fi
+if rg -q 'final `GO`|final GO|chance of final `GO`' 'Unitree R1 Codex Prompt.md'; then
+  echo 'forbidden undefined final GO terminology' >&2
+  exit 1
+fi
 
 rg -q 'MES[[:space:]]*=[[:space:]]*1/6' 'Unitree R1 Codex Prompt.md' || {
   echo 'missing ordinary MES = 1/6' >&2

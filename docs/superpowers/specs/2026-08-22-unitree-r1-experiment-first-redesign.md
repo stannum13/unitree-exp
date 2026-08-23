@@ -95,7 +95,7 @@ Existing project resources are out of scope. In particular, the program must not
 
 USD 30 is an absolute ceiling, not a target. It means incremental, program-attributable GCP list-price spend before tax and currency conversion. Unrelated pre-existing project usage is excluded from the experiment ledger and must not be modified. The live price must be queried before provisioning.
 
-The design-time envelope uses the higher on-demand rate even if Spot is selected. Using unrounded prices observed on 2026-08-22:
+The design-time envelope uses the conservative Standard/on-demand rate; Spot is forbidden. Using unrounded prices observed on 2026-08-22:
 
 | Resource | Conservative bound |
 |---|---:|
@@ -108,41 +108,63 @@ The design-time envelope uses the higher on-demand rate even if Spot is selected
 | Bounded non-runtime reserve | USD 5.000000000 |
 | Unallocated contingency | USD 3.899852512 |
 
-Create at most one successfully provisioned paid VM for this program. Non-billable capacity errors may select another verified zone, but once a worker reaches a billable state it is the campaign's only worker. On-demand is the default because bootstrap and cross-engine diagnosis are not initially preemption-tolerant. Spot is permitted only when the program explicitly accepts early termination; its discount must not be converted into extra runtime.
+Create at most one successfully provisioned paid VM for this program. Standard/on-demand is mandatory. A primary attempt plus at most one alternate-zone attempt is allowed only under the complete nonbillable-capacity protocol below; once a worker reaches a billable state it is the campaign's only worker.
 
-Set `--max-run-duration=23h58m` and `--instance-termination-action=DELETE`. Budget the remaining two minutes as deletion slippage, producing the 24-hour charged-runtime bound above. The boot disk auto-deletes with the VM. Do not create Local SSDs, snapshots, reusable images, load balancers, Cloud NAT, reserved addresses, or additional disks.
+Use an absolute RFC3339 `terminationTime` no later than create plus `23h45m`, with termination action `DELETE`, and arm the independent shared watchdog described below before the Compute v1 REST insert. The boot disk auto-deletes with the VM. Do not use a restart-relative maximum-run-duration contract. Do not create Local SSDs, snapshots, reusable images, load balancers, Cloud NAT, reserved addresses, or additional disks.
 
-If live prices or the VM specification differ, compute:
+For each capacity attempt compute:
 
 ```text
-authorized_runtime_hours = floor_to_0.1h(
-    (remaining_authorized_cost
-     - fixed_incremental_cost
-     - bounded_non_runtime_reserve
-     - deletion_slippage_allowance)
-    / conservative_all_in_hourly_rate
-)
+operational_envelope = 26.100147488
+remaining_envelope = operational_envelope - cumulative_realized_campaign_cost
+remaining_nonruntime_reserve = max(0, 5.000000000 - cumulative_realized_nonruntime_cost)
+authorized_compute_hours = min(23.75, floor_to_0.1h(max(0,
+    (remaining_envelope - remaining_nonruntime_reserve)
+    / conservative_all_in_hourly_rate - 0.25)))
 ```
 
-`conservative_all_in_hourly_rate` is the greater of the live applicable rate and the design-time on-demand rate. `fixed_incremental_cost` is the realized allocation for durable storage, logging, and expected egress within—not in addition to—the USD 5 bounded non-runtime reserve. The result must be reduced when prices rise; contingency is never converted into experimental runtime.
+`conservative_all_in_hourly_rate` is the greater of the live applicable rate and the design-time on-demand rate. Every prior capacity-attempt/API/storage cost enters the realized totals. The 0.25-hour deletion allowance is subtracted once here and nowhere else. The result must be reduced when prices rise; contingency is never converted into experimental runtime.
 
 Before every paid launch, append to the cost ledger:
 
 - resource name and labels;
 - rate source and retrieval time;
 - conservative hourly and fixed-cost estimates;
-- maximum run duration;
+- authorized compute hours and absolute hard deadline;
 - worst-case incremental cost;
 - cumulative worst-case cost; and
 - remaining authorized cost.
 
 No resource may launch if its worst-case cumulative cost can exceed USD 30.
 
-Before creation, require zero instances with the experiment label in `RUNNING`, `PROVISIONING`, `STAGING`, or `STOPPING`. Create no replacement or fallback VM during this program. The worker must expose a verified termination timestamp and auto-deleting boot disk. Voluntary completion must synchronize and hash-verify artifacts before early deletion. Billing alerts are supplemental; they are not treated as spend caps.
+Before creation, require zero instances with the experiment label in `RUNNING`, `PROVISIONING`, `STAGING`, `STOPPING`, `SUSPENDING`, or `SUSPENDED`. No replacement or fallback VM is allowed after any billable state; the only additional insert opportunity is the rigorously nonbillable alternate-zone capacity attempt below. The worker must expose a verified termination timestamp and auto-deleting boot disk. Voluntary completion must satisfy the all-artifact acknowledgement contract before early deletion. Billing alerts are supplemental; they are not treated as spend caps.
 
-Checkpoints, ledgers, and manifests must upload every five minutes and after each checkpoint to a dedicated regional object prefix. Keep no more than the latest two checkpoints and enforce a cumulative uncompressed limit of 10 GiB. Disable versioning and soft delete for this disposable prefix and apply a seven-day lifecycle rule. A VM-side soft deadline at 22h30m stops new work, finalizes logs, verifies object checksums, and begins clean shutdown. The platform deadline is a cost-containment fuse, not the artifact-transfer mechanism. Retrieve and hash-verify durable artifacts locally before deleting their temporary cloud copies.
+Checkpoints, ledgers, and manifests must upload every five minutes and after each checkpoint to a dedicated regional object prefix. Keep no more than the latest two ordinary, unreferenced rolling checkpoints and enforce a cumulative uncompressed limit of 10 GiB and 1,000 object generations. Disable versioning and soft delete and use held generations plus a seven-day Custom-Time lifecycle. At 22h30m stop new work. Before voluntary deletion, stop all writers, finalize recoverable partial state, drain the uploader, obtain generation-specific acknowledgements for every manifest-referenced non-recomputable artifact plus final `INDEX.json` and ownership/cost ledgers, retrieve and hash-verify all of them locally, prove no writer/uploader remains, and transition bucket IAM `ACTIVE` to `SEALED`. Only then delete VM/disk/network, cloud objects/bucket, and worker service account. At the immutable hard deadline, cost containment overrides incomplete artifact recovery.
 
-Bound the USD 5 non-runtime reserve as follows: at most 10 GiB WebRTC egress (USD 1.20 using a conservative Premium-tier India rate), at most 10 GiB artifact retrieval (USD 1.20), seven-day object storage and operations (USD 0.10), logging/API/rounding (USD 1.00), and USD 1.50 residual contingency. Disable verbose logging export and stop streaming when its host-side byte counter reaches the quota.
+Bound the USD 5 non-runtime reserve as follows: at most 10 GiB WebRTC egress (USD 1.20 using a conservative Premium-tier India rate), at most 10 GiB artifact retrieval (USD 1.20), seven-day object storage and operations (USD 0.10), logging/API/rounding/watchdog (USD 1.00, with a USD 0.50 aggregate watchdog/API sub-bound), and USD 1.50 residual contingency. Disable verbose logging export and stop streaming when its host-side byte counter reaches the quota.
+
+## Audit-driven cloud lifecycle amendment
+
+This section supersedes the earlier draft lifecycle wherever wording conflicts. Ordinary campaign autonomy must fail closed unless a shared operator-owned Workflows watchdog, execution service account, five immutable custom-role definitions, and disposable ownership tag already exist and pass exact name, revision, stage, permission-hash, owner, and authority checks. The campaign may not create or enable those persistent prerequisites or project IAM. When absent, report `BLOCKED_GCP_WATCHDOG` before spend and emit an exact separately authorized one-time operator-bootstrap manifest/command sequence with immutable identities, definitions and permission hashes, owner, estimated cost, verification, and separate teardown responsibility. Bootstrap work is not experimental progress; rerun only after a human operator separately executes and attests it.
+
+Each capacity attempt creates its unique bucket in `BASE`, starts exactly one execution with concurrency overflow/backlogging disabled and `LOG_NONE`, captures its exact execution resource name and revision, and polls it to `ACTIVE`, never `QUEUED`. Only then may the controller use the execution ID to install and verify the exact `ACTIVE` binding/hash. The already-active workflow waits a bounded arming interval and creates `ARMED_PRECREATE`; wrong revision, queued/failed state, or timeout requires cleanup and forbids insert. The VM uses one authenticated Compute v1 REST `instances` endpoint with query-only UUID `requestId`, a byte-exact request body, an absolute `terminationTime`, and exact metadata items `enable-oslogin=TRUE` and `block-project-ssh-keys=TRUE`. Post-create verification covers their effective values, exact controller OS Login/IAP/`iam.serviceAccounts.actAs` authority, and absence of unexpected login/admin principals.
+
+Permit a primary and at most one alternate-zone capacity attempt. The alternate requires an enumerated terminal nonbillable capacity error, proof that no VM/disk/billable state ever existed, and verified cleanup/cancellation of all first-attempt objects. It uses a fresh 128-bit nonce, requestId, bucket, execution, deadlines, body, and preflight. Any ambiguity, survivor, or billable state forbids it. Across attempts: at most one live attempt, one worker ever billable, one successful worker, 1,000 object generations, 20,000 workflow internal steps, and the existing USD 0.50 sub-bound.
+
+Use these exact definitions:
+
+```text
+operational_envelope = 26.100147488
+remaining_envelope = operational_envelope - cumulative_realized_campaign_cost
+remaining_nonruntime_reserve = max(0, 5.000000000 - cumulative_realized_nonruntime_cost)
+authorized_compute_hours = min(23.75, floor_to_0.1h(max(0,
+    (remaining_envelope - remaining_nonruntime_reserve)
+    / conservative_all_in_hourly_rate - 0.25)))
+```
+
+All prior capacity-attempt/API/storage costs enter realized totals; the 0.25-hour deletion allowance appears nowhere else. Initial zero realized cost at the design rate yields 23.7 authorized hours after flooring and stays inside the 23h45m hard deadline. The 24-hour rate product remains a conservative bound. The USD 3.899852512 contingency is never runtime.
+
+Ratified terminal vocabulary includes `SCREEN_FUTILE_NO_CONFIRM`, `SCREEN_DIAGNOSTIC_REJECT_NO_CONFIRM`, and `BLOCKED_GCP_WATCHDOG`. Screening predictive probability always means the probability that a fresh confirmation panel satisfies the posterior component of `PILOT_SUCCESS`: `P(Delta > 0) >= 0.95` and `P(Delta >= MES) >= 0.50`; safety and mechanism gates remain separate.
 
 ## Experimental decision tree
 
@@ -282,9 +304,9 @@ For ordinary modules, define the minimum meaningful effect before screening as `
 
 ### Screening and confirmation
 
-For each screened candidate, calculate the posterior-predictive probability that a fresh 12-block confirmation panel will satisfy the final `GO` rule. Use the Dirichlet-multinomial predictive distribution and analyze every simulated future panel from the original fixed Jeffreys prior, not the screening posterior.
+For each screened candidate, calculate the posterior-predictive probability that a fresh 12-block confirmation panel will satisfy the posterior component of `PILOT_SUCCESS`: `P(Delta > 0) >= 0.95` and `P(Delta >= MES) >= 0.50`. Safety and mechanism gates remain separate. Use the Dirichlet-multinomial predictive distribution and analyze every simulated future panel from the original fixed Jeffreys prior, not the screening posterior.
 
-- Drop a candidate for predictive futility when its chance of final `GO` is below 0.10. This means the remaining spend has less than a one-in-ten chance to change the decision.
+- Drop a candidate for predictive futility when its chance of satisfying that posterior component is below 0.10. This means the remaining spend has less than a one-in-ten chance to change the decision.
 - Among non-futile candidates, select exactly one challenger per predeclared incumbent using expected `Delta`, subject to safety and mechanism-specific diagnostics.
 - Screening probabilities are operational only and are not efficacy evidence.
 
