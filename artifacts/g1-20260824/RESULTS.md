@@ -4,7 +4,7 @@ Date: 2026-08-24 UTC
 
 ## Outcome
 
-Isaac Sim ran headlessly on a GCP `g2-standard-8` Spot VM with one NVIDIA L4. The official compatibility checker reported `System checking result: PASSED`, recognized the L4 as supported, and initialized Vulkan. The stock standalone Python example initialized Warp on `cuda:0`, completed 100 Kit updates, and printed `Hello World!`.
+Isaac Sim ran headlessly on a GCP `g2-standard-8` Spot VM with one NVIDIA L4. The live official compatibility-checker output reported `System checking result: PASSED`, recognized the L4 as supported, and initialized Vulkan; that raw checker log was lost when the first Spot VM was preempted and is not part of this committed evidence pack. The retained stock standalone-example logs show Vulkan on the L4, Warp on `cuda:0`, completion of the example's finite update loop, and `Hello World!`.
 
 This proves the base Isaac Sim container path. It does not yet prove Isaac Lab or the Unitree environment.
 
