@@ -1,0 +1,133 @@
+main:
+  params: [args]
+  steps:
+    - validate_project:
+        switch:
+          - condition: ${args.project != "project-1178f0de-10fb-4e7e-8e4"}
+            raise: invalid project
+    - validate_zone:
+        switch:
+          - condition: ${not(args.zone in ["us-central1-a", "us-central1-b", "us-central1-c"])}
+            raise: invalid zone
+    - validate_names:
+        switch:
+          - condition: ${not(text.match_regex(args.vm_name, "^reflect-r1-g1-[a-f0-9]{12}$"))}
+            raise: invalid VM name
+          - condition: ${not(text.match_regex(args.disk_name, "^reflect-r1-g1-[a-f0-9]{12}$"))}
+            raise: invalid disk name
+          - condition: ${not(text.match_regex(args.nonce, "^[a-f0-9]{12}$"))}
+            raise: invalid nonce
+          - condition: ${args.vm_name != "reflect-r1-g1-" + args.nonce}
+            raise: VM name does not match nonce
+          - condition: ${args.disk_name != "reflect-r1-g1-" + args.nonce}
+            raise: disk name does not match nonce
+    - validate_ids:
+        switch:
+          - condition: ${not(text.match_regex(args.vm_id, "^[1-9][0-9]{0,19}$"))}
+            raise: invalid VM numeric ID
+          - condition: ${not(text.match_regex(args.disk_id, "^[1-9][0-9]{0,19}$"))}
+            raise: invalid disk numeric ID
+          - condition: ${not(text.match_regex(args.vm_delete_request_id, "^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"))}
+            raise: invalid VM delete request ID
+          - condition: ${not(text.match_regex(args.disk_delete_request_id, "^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"))}
+            raise: invalid disk delete request ID
+    - wait_for_deadline:
+        call: sys.sleep_until
+        args:
+          time: ${args.deadline_rfc3339}
+    - remove_instance:
+        call: delete_owned_instance
+        args:
+          args: ${args}
+        result: instance_result
+    - remove_disk:
+        call: delete_owned_disk
+        args:
+          args: ${args}
+        result: disk_result
+    - finish:
+        return:
+          instance: ${instance_result}
+          disk: ${disk_result}
+
+delete_owned_instance:
+  params: [args]
+  steps:
+    - get_instance:
+        try:
+          call: googleapis.compute.v1.instances.get
+          args:
+            project: ${args.project}
+            zone: ${args.zone}
+            instance: ${args.vm_name}
+          result: instance
+        except:
+          as: e
+          steps:
+            - classify_get_error:
+                switch:
+                  - condition: ${e.code == 404}
+                    next: instance_absent
+            - propagate_get_error:
+                raise: ${e}
+    - verify_instance:
+        switch:
+          - condition: ${instance.id != args.vm_id}
+            raise: instance numeric ID mismatch
+          - condition: ${instance.name != args.vm_name}
+            raise: instance name mismatch
+          - condition: ${map.get(instance.labels, "run_nonce") != args.nonce}
+            raise: instance nonce mismatch
+    - delete_instance:
+        call: googleapis.compute.v1.instances.delete
+        args:
+          project: ${args.project}
+          zone: ${args.zone}
+          instance: ${args.vm_name}
+          requestId: ${args.vm_delete_request_id}
+    - instance_deleted:
+        return: deleted
+    - instance_absent:
+        return: absent
+
+delete_owned_disk:
+  params: [args]
+  steps:
+    - get_disk:
+        try:
+          call: googleapis.compute.v1.disks.get
+          args:
+            project: ${args.project}
+            zone: ${args.zone}
+            disk: ${args.disk_name}
+          result: disk
+        except:
+          as: e
+          steps:
+            - classify_get_error:
+                switch:
+                  - condition: ${e.code == 404}
+                    next: disk_absent
+            - propagate_get_error:
+                raise: ${e}
+    - verify_disk:
+        switch:
+          - condition: ${disk.id != args.disk_id}
+            raise: disk numeric ID mismatch
+          - condition: ${disk.name != args.disk_name}
+            raise: disk name mismatch
+          - condition: ${map.get(disk.labels, "run_nonce") != args.nonce}
+            raise: disk nonce mismatch
+          - condition: ${len(default(map.get(disk, "users"), [])) != 0}
+            raise: disk still has users
+    - delete_disk:
+        call: googleapis.compute.v1.disks.delete
+        args:
+          project: ${args.project}
+          zone: ${args.zone}
+          disk: ${args.disk_name}
+          requestId: ${args.disk_delete_request_id}
+    - disk_deleted:
+        return: deleted
+    - disk_absent:
+        return: absent
