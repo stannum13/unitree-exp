@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="lifecycle-title lifecycle-desc">
+  <title id="lifecycle-title">Bounded Unitree G1 cloud experiment lifecycle</title>
+  <desc id="lifecycle-desc">A fixed-identity launch creates one Google Cloud Spot worker with an NVIDIA L4, runs the official Isaac Sim 6.0.1 container, retains versioned evidence, and delegates deadline cleanup to an ownership-checking watchdog. The GPU container path passed while shutdown remained unresolved.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#54749b"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0f172a" flood-opacity=".12"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="420" rx="24" fill="#f7f8fa"/>
+  <text x="52" y="50" font-family="Inter, ui-sans-serif, system-ui" font-size="26" font-weight="700" fill="#182230">G1 · one bounded cloud run from launch to verified cleanup</text>
+  <text x="52" y="78" font-family="Inter, ui-sans-serif, system-ui" font-size="15" fill="#5b6675">Every paid resource is named, owned, time-bounded, and independently checked before deletion.</text>
+
+  <g filter="url(#shadow)" font-family="Inter, ui-sans-serif, system-ui">
+    <rect x="35" y="112" width="196" height="126" rx="15" fill="#ffffff" stroke="#c8d2df"/>
+    <text x="133" y="146" text-anchor="middle" font-size="17" font-weight="700" fill="#182230">Bounded launch</text>
+    <text x="133" y="174" text-anchor="middle" font-size="13" fill="#5b6675">fixed project · zone</text>
+    <text x="133" y="196" text-anchor="middle" font-size="13" fill="#5b6675">resource IDs · run nonce</text>
+    <text x="133" y="218" text-anchor="middle" font-size="13" fill="#5b6675">USD 30 hard ceiling</text>
+
+    <rect x="266" y="112" width="196" height="126" rx="15" fill="#edf4ff" stroke="#88a8d4"/>
+    <text x="364" y="146" text-anchor="middle" font-size="17" font-weight="700" fill="#213a5c">GCP Spot worker</text>
+    <text x="364" y="174" text-anchor="middle" font-size="13" fill="#49627e">g2-standard-8</text>
+    <text x="364" y="196" text-anchor="middle" font-size="13" fill="#49627e">8 vCPU · 32 GiB</text>
+    <text x="364" y="218" text-anchor="middle" font-size="13" font-weight="700" fill="#315f99">NVIDIA L4</text>
+
+    <rect x="497" y="100" width="206" height="150" rx="15" fill="#24364b" stroke="#24364b"/>
+    <text x="600" y="137" text-anchor="middle" font-size="17" font-weight="700" fill="#ffffff">Official container</text>
+    <text x="600" y="168" text-anchor="middle" font-size="15" fill="#dbe7f5">Isaac Sim 6.0.1</text>
+    <line x1="530" y1="184" x2="670" y2="184" stroke="#6383aa"/>
+    <text x="600" y="207" text-anchor="middle" font-size="13" fill="#b9cbe0">Vulkan · Warp · cuda:0</text>
+    <text x="600" y="228" text-anchor="middle" font-size="13" fill="#b9cbe0">finite update loop</text>
+
+    <rect x="738" y="112" width="196" height="126" rx="15" fill="#ffffff" stroke="#c8d2df"/>
+    <text x="836" y="146" text-anchor="middle" font-size="17" font-weight="700" fill="#182230">Retained evidence</text>
+    <text x="836" y="174" text-anchor="middle" font-size="13" fill="#5b6675">image digest · versions</text>
+    <text x="836" y="196" text-anchor="middle" font-size="13" fill="#5b6675">commands · raw logs</text>
+    <text x="836" y="218" text-anchor="middle" font-size="13" fill="#5b6675">cost · cleanup record</text>
+
+    <rect x="969" y="112" width="196" height="126" rx="15" fill="#edf4ff" stroke="#88a8d4"/>
+    <text x="1067" y="146" text-anchor="middle" font-size="17" font-weight="700" fill="#213a5c">Watchdog</text>
+    <text x="1067" y="174" text-anchor="middle" font-size="13" fill="#49627e">identity re-check</text>
+    <text x="1067" y="196" text-anchor="middle" font-size="13" fill="#49627e">deadline enforcement</text>
+    <text x="1067" y="218" text-anchor="middle" font-size="13" fill="#49627e">VM + disk deletion</text>
+  </g>
+
+  <g stroke="#54749b" stroke-width="3" fill="none" marker-end="url(#arrow)">
+    <path d="M233 175 H259"/>
+    <path d="M464 175 H490"/>
+    <path d="M705 175 H731"/>
+    <path d="M936 175 H962"/>
+  </g>
+
+  <rect x="35" y="284" width="545" height="58" rx="13" fill="#e6f5ee" stroke="#4f9a78"/>
+  <circle cx="66" cy="313" r="10" fill="#2f8062"/>
+  <path d="M61 313 l4 4 8 -10" stroke="#fff" stroke-width="2.5" fill="none"/>
+  <text x="91" y="309" font-family="Inter, ui-sans-serif, system-ui" font-size="15" font-weight="700" fill="#205d47">Passed: base GPU and container path</text>
+  <text x="91" y="329" font-family="Inter, ui-sans-serif, system-ui" font-size="13" fill="#3b6c59">Renderer, Warp, CUDA, and the finite stock update loop completed.</text>
+
+  <rect x="620" y="284" width="545" height="58" rx="13" fill="#fff4df" stroke="#d6a13d"/>
+  <circle cx="651" cy="313" r="10" fill="#c7861d"/>
+  <text x="647" y="318" font-family="Inter, ui-sans-serif, system-ui" font-size="16" font-weight="800" fill="#fff">!</text>
+  <text x="676" y="309" font-family="Inter, ui-sans-serif, system-ui" font-size="15" font-weight="700" fill="#714b0c">Unresolved: clean shutdown</text>
+  <text x="676" y="329" font-family="Inter, ui-sans-serif, system-ui" font-size="13" fill="#805c22">Fast teardown aborted; orderly teardown exceeded the two-minute bound.</text>
+
+  <text x="600" y="386" text-anchor="middle" font-family="Inter, ui-sans-serif, system-ui" font-size="13" font-weight="600" fill="#667384">Operational flow from retained G1 artifacts — not an R1 scene, policy, or physical-robot result.</text>
+</svg>
+
