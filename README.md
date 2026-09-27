@@ -6,7 +6,11 @@ This repository turns that question into a safety-gated Unitree R1 simulation pr
 
 > **Safety boundary:** `PHYSICAL_DEPLOYMENT_ALLOWED=false`. No completed result in this repository authorizes physical robot commands.
 
+**Latest completed experiment:** a finite Isaac Sim loop ran on a cloud L4 GPU; clean process shutdown remains unresolved. The next milestone is qualifying the actual R1 model and action mapping. [Read the retained run](artifacts/g1-20260824/RESULTS.md) · [Website copy and diagram](docs/WEBSITE.md)
+
 ## G1 result at a glance
+
+Here **G1 means campaign gate 1**, not the Unitree G1 humanoid. The target of this project is the Unitree R1; this first gate used a stock simulator example, not an imported robot.
 
 | Item | Retained result |
 |---|---|
